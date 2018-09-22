@@ -1,12 +1,16 @@
 import os
+from collections import Counter
+
 import numpy as np
+import seaborn as sb
 from scipy import signal
 from matplotlib import pyplot
+from sklearn.mixture import GaussianMixture
 
 from methods import config
-import seaborn as sb
 
 PROPS = config.data_properties
+HEIGHT_INDEX = config.height_index
 
 ## Boundary Detection
 def sobel(x):
@@ -69,7 +73,7 @@ def show_property_distributions(X):
     pyplot.show()
 
 ## Outlier Detection
-def extract_outliers(X, height_index=4, threshold=2.5):
+def extract_outliers(X, height_index=HEIGHT_INDEX, threshold=2.5):
     """ Finds outliers from data
     Args:
         X (np array): data
@@ -92,7 +96,7 @@ def extract_outliers(X, height_index=4, threshold=2.5):
     # Threshold by z-score
     return z > threshold
 
-def show_outliers(X, height_index=4):
+def show_outliers(X, height_index=HEIGHT_INDEX):
     """ Plots data properties and outliers
     Args:
         X (np array): data
@@ -192,7 +196,7 @@ def get_correlation_values(cors, r, c):
     rc_cors = [cor[r,c] for cor in cors]
     return rc_cors
 
-def plot_correlations(num_props, path):
+def show_correlations(num_props, path):
     """ Plots correlations between all properties
     Args:
         num_props (int): number of properties
@@ -229,4 +233,110 @@ def plot_correlations(num_props, path):
     pyplot.show()
 
 ## Mixture of Gaussians Model
+def segment(X, outliers, num_components=3, normal=True):
+    """ Classifies each pixel into components using a Gaussian mixture model
+    Args:
+        X (np.array): data
+        outliers (np.array): outliers mask
+        num_components (int): number of classes
+        normal (bool): flag to apply normalization of data
+    Returns:
+        (np.array): matrix of classification per pixel
+    """
+    n, m, d = X.shape
+
+    if normal: # maps domain to [-1,1]
+        max_vector = [np.max(np.abs(X[:,:,i])) for i in range(d)]
+
+        normal_X = np.zeros(X.shape)
+        for i in range(d):
+            normal_X[:,:,i] = X[:,:,i] / max_vector[i]
+    else:
+        normal_X = X
+
+    V = [normal_X[i,j,:] for i in range(m) for j in range(n) if not outliers[i,j]]
+    V_full = [normal_X[i,j,:] for i in range(n) for j in range(m)]
+
+    gmm = GaussianMixture(n_components=num_components, covariance_type='full')
+    gmm.fit(V)
+
+    l = gmm.predict(V_full) # provides a gmm component to all data points
+    return l.reshape(n,m)
+
+def apply_segmentation(X, height_flag=False):
+    """ Gets classification of pixels after segmentation
+    Args:
+        X (np.array): data
+        height_flag (bool): flag to keep height property
+    Returns:
+        L (np.array): matrix of classification per pixel
+        reduced_X (np.array): data after applying height flag
+    """
+    O = extract_outliers(X)
+
+    # NOTE keep height data for 2-components data set due to their direct correlation
+    if height_flag:
+        reduced_X = X
+    else: # remove it for other data types to avoid hurting the classification
+        reduced_X = np.delete(X, HEIGHT_INDEX, axis=2)
+
+    L = segment(reduced_X, O, normal=True)
+    reduced_X[O==1] = 0 # remove outliers from data
+
+    L += 1 # all labels move up one
+    L *= (1 - O) # outliers map to label 0
+
+    return L, reduced_X
+
+def show_classification(L, reduced_X):
+    """ Shows classification of pixels after segmentation
+    Args:
+        L (np.array): matrix of classification per pixel
+        reduced_X (np.array): data after applying height flag
+    """
+    d = reduced_X.shape[2]
+    fig = pyplot.figure(figsize=(16, 30), dpi= 80, facecolor='w', edgecolor='k')
+    cnt = 1
+    for i in range(d):
+        pyplot.subplot(3,4,cnt)
+        pyplot.title(PROPS[i])
+        m = pyplot.imshow(reduced_X[:,:,i])
+        pyplot.colorbar(m, fraction=0.046, pad=0.04)
+        cnt += 1
+
+        pyplot.subplot(3,4,cnt)
+        pyplot.title("Segmentation")
+        m = pyplot.imshow(L)
+        pyplot.colorbar(m, fraction=0.046, pad=0.04)
+        cnt += 1
+
+    pyplot.tight_layout()
+    pyplot.show()
+
+def show_classification_distributions(L, X):
+    """ Shows distributions of classes after segmentation
+    Args:
+        L (np.array): matrix of classification per pixel
+        X (np.array): data
+    """
+    d = X.shape[2]
+    fig = pyplot.figure(figsize=(20, 20), dpi= 80, facecolor='w', edgecolor='k')
+    cnt = 1
+    for i in range(d):
+        pyplot.subplot(3,4,cnt)
+        pyplot.title(PROPS[i])
+        m = pyplot.imshow(X[:,:,i], aspect='auto')
+        pyplot.colorbar(m, fraction=0.046, pad=0.04)
+        cnt += 1
+
+        pyplot.subplot(3,4,cnt)
+        pyplot.title(PROPS[i])
+        for j in range(1, np.max(L) + 1): # skip outliers
+            pyplot.hist(X[:,:,i][L == j], 100, alpha=0.3, density=True)
+
+        cnt += 1
+        pyplot.grid()
+
+    pyplot.tight_layout()
+    pyplot.show()
 
