@@ -1,6 +1,8 @@
 import logging
+import numpy as np
 from collections import Counter
 from sklearn.mixture import GaussianMixture
+from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
 
 logger = logging.getLogger(__name__)
@@ -21,6 +23,7 @@ class SegmenterGMM(object):
 
         self.gmm = None
         self.pca = None
+        self.sst = None
 
     def fit(self, data, outliers=None):
         """
@@ -38,33 +41,36 @@ class SegmenterGMM(object):
             logger.warning("Data arrays must be of shape (height, width, n_properties).")
             return None
 
-        if len(outliers.shape) != 2:
+        if outliers and len(outliers.shape) != 2:
             logger.warning("Outlier arrays must be of shape (height, width).")
             return None
-
 
         h, w, c = data.shape
         n = h * w
 
-        data = data.reshape(c, n)
+        if self.padding > 0:
+            print("Building Windows")
+            data = SegmenterGMM.get_windows(data, padding=self.padding)
+        else:
+            data = data.reshape(n, c)
 
         if outliers is not None:
-            outliers = outliers.reshape(c, n)
+            print("Removing Outliers")
+            outliers = outliers.reshape(n, c)
 
         data = SegmenterGMM.remove_outliers(data, outliers)
 
         if self.normalize:
-            data = SegmenterGMM.normalize_data(data)
-
-        if self.padding > 0:
-            data = SegmenterGMM.get_windows(data, padding=self.padding)
-            # Extract neighborhood
-            # Flatten
+            print("Scaling data")
+            self.sst = StandardScaler()
+            data = self.sst.fit_transform(data)
 
         if self.embedding_dim is not None:
-            self.pca = PCA(n_components=embedding_dim)
+            print("Fitting PCA")
+            self.pca = PCA(n_components=self.embedding_dim)
             data = self.pca.fit_transform(data)
 
+        print("Fitting GMM")
         self.gmm = GaussianMixture(n_components=self.n_components, covariance_type="full")
         self.gmm.fit(data)
 
@@ -88,8 +94,33 @@ class SegmenterGMM(object):
             logger.warning("Attempting to transform prior to fitting. You must call .fit() first.")
             return None
 
-        pass
+        h, w, c = data.shape
+        n = h * w
 
+        if self.padding > 0:
+            print("Building Windows")
+            data = SegmenterGMM.get_windows(data, padding=self.padding)
+        else:
+            data = data.reshape(n, c)
+
+        if outliers is not None:
+            print("Removing Outliers")
+            outliers = outliers.reshape(n, c)
+
+        data = SegmenterGMM.remove_outliers(data, outliers)
+
+        if self.normalize:
+            print("Scaling Data")
+            data = self.sst.transform(data)
+
+        if self.embedding_dim is not None:
+            print("PCA Transform")
+            data = self.pca.transform(data)
+
+        print("Predicting with GMM")
+        labels = self.gmm.predict(data)
+
+        return np.reshape(labels, (h, w))
 
     def fit_transform(self, data, outliers=None):
         """
@@ -113,21 +144,32 @@ class SegmenterGMM(object):
 
 
     @staticmethod
-    def normalize_data(data):
-        means = np.mean(data, axis=1)
-        stds = np.std(data, axis=1)
-        return (data - means) / stds
-
-
-    @staticmethod
     def remove_outliers(data, outliers):
         if outliers is None:
             return data
 
         n_outlier = len(outliers)
-        return np.array([data[i] if not outliers[i] for i in range(n_outliers)])
+        return np.array([data[i] for i in range(n_outliers) if not outliers[i]])
 
 
     @staticmethod
-    def get_windows(data, padding=3):
+    def get_windows(data, padding=3, flatten=True):
+        h, w, c = data.shape
+        n = 2 * padding + 1
+        wins = np.zeros((h * w, n**2, c))
+        for d in range(data.shape[2]):
+            X = np.pad(data[:,:,d], padding, "constant")
+            idx = 0
+            for i in range(padding, data.shape[0] + padding):
+                for j in range(padding, data.shape[1] + padding):
+                    imin, imax = i - padding, i + padding + 1
+                    jmin, jmax = j - padding, j + padding + 1
+                    wins[idx, :, d] = X[imin:imax, jmin:jmax].flatten()
+                    idx += 1
+
+        if flatten:
+            l = wins.shape[1]
+            wins = np.reshape(wins, (-1, l * c))
+
+        return wins
 
