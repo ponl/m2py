@@ -55,12 +55,13 @@ def show_boundaries(X):
     pyplot.show()
 
 ## Properties Distributions
-def show_property_distributions(X):
+def show_property_distributions(X, threshold):
     """ Plots the pdfs of the data properties
     Args:
         X (np array): data
+        threshold (int): threshold for outlier extraction
     """
-    O = extract_outliers(X)
+    O = extract_outliers(X, threshold = threshold)
     fig = pyplot.figure(figsize=(15, 10), dpi= 80, facecolor='w', edgecolor='k')
 
     for j in range(X.shape[2]):
@@ -263,7 +264,7 @@ def segment(X, outliers, num_components=3, normal=True):
     l = gmm.predict(V_full) # provides a gmm component to all data points
     return l.reshape(n,m)
 
-def apply_segmentation(X, height_flag=False):
+def apply_segmentation(X, threshold, height_flag=False):
     """ Gets classification of pixels after segmentation
     Args:
         X (np.array): data
@@ -272,7 +273,7 @@ def apply_segmentation(X, height_flag=False):
         L (np.array): matrix of classification per pixel
         reduced_X (np.array): data after applying height flag
     """
-    O = extract_outliers(X)
+    O = extract_outliers(X, threshold= threshold)
 
     # NOTE keep height data for 2-components data set due to their direct correlation
     if height_flag:
