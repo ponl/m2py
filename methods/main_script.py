@@ -4,31 +4,37 @@ from methods import main_methods as mm
 import numpy as np
 
 DATA_DIR = config.data_directory_path
+
 DATA_TYPE_SUB_DIR = "nanowires/combined/"
+#DATA_TYPE_SUB_DIR = "2componentfilms/combined/"
+
 DIR = DATA_DIR + DATA_TYPE_SUB_DIR
 
 # Using wire films
-X = np.load(DIR + "100-0_48_NW-1_combined.npy")
+data = np.load(DIR + "100-0_48_NW-1_combined.npy")
 
 # Using 2 component nano films
-#X = np.load(DIR + "PTB7-ThPC71BM_CBDIO_vacm_fresh_3um_combined.npy")
+#data = np.load(DIR + "PTB7-ThPC71BM_CBDIO_vacm_fresh_3um_combined.npy")
+#data = np.load(DIR + "PTB7PC71BM_CBonly_ascast_fresh_500 nm_combined.npy")
 
 # Show boundaries after applying Sobel operator
-mm.show_boundaries(X)
+mm.show_boundaries(data)
 
 # Shows outliers using z-score threshold
-mm.show_outliers(X)
+outliers = mm.extract_outliers(data)
+mm.show_outliers(data, outliers)
 
 # Shows correlations between all pairs of properties
-mm.show_correlations(X.shape[2], DIR) # TODO needs to be tested with more data files
+mm.show_correlations(data.shape[2], DIR) # TODO needs to be tested with more data files
 
 # Shows a-priori (classification) property distributions
-mm.show_property_distributions(X)
+mm.show_property_distributions(data, outliers)
 
 # Shows pixel classification after applying Gaussian mixture model
-L, reduced_X = mm.apply_segmentation(X, height_flag=False)
-mm.show_classification(L, reduced_X)
+L, reduced_data = mm.apply_segmentation(data, outliers, height_flag=True)
+mm.show_classification(L, reduced_data)
 
 # Shows a-posteriori (classification) property distributions
-mm.show_classification_distributions(L, X)
+mm.show_classification_distributions(L, data)
 
+# TODO finish watershed segmentation class

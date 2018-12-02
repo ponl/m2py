@@ -55,12 +55,12 @@ def show_boundaries(X):
     pyplot.show()
 
 ## Properties Distributions
-def show_property_distributions(X):
+def show_property_distributions(X, O):
     """ Plots the pdfs of the data properties
     Args:
         X (np array): data
+        O (np array): outliers
     """
-    O = extract_outliers(X)
     fig = pyplot.figure(figsize=(15, 10), dpi= 80, facecolor='w', edgecolor='k')
 
     for j in range(X.shape[2]):
@@ -96,29 +96,31 @@ def extract_outliers(X, height_index=HEIGHT_INDEX, threshold=2.5):
     # Threshold by z-score
     return z > threshold
 
-def show_outliers(X, height_index=HEIGHT_INDEX):
+def show_outliers(X, O, height_index=HEIGHT_INDEX):
     """ Plots data properties and outliers
     Args:
         X (np array): data
+        O (np array): outliers
         height_index (int): index of height property
     """
-    fig = pyplot.figure(figsize=(15,5))
+    fig = pyplot.figure(figsize=(18,5))
 
     pyplot.subplot(1,3,1)
-    m = pyplot.imshow(X[:,:,height_index])
+    m = pyplot.imshow(X[:,:,height_index], aspect="auto")
     pyplot.title('Height')
     pyplot.colorbar(m, fraction=0.046, pad=0.04)
 
     pyplot.subplot(1,3,2)
-    pyplot.imshow(extract_outliers(X))
-    pyplot.title('Height')
+    pyplot.imshow(O, aspect='auto')
+    pyplot.title('Height Outliers')
 
-    outliers = extract_outliers(X)
-    X[outliers == 1] = 0
+    X[O == 1] = 0
     pyplot.subplot(1,3,3)
-    m = pyplot.imshow(X[:,:,height_index])
+    m = pyplot.imshow(X[:,:,height_index], aspect='auto')
     pyplot.title('Height')
     pyplot.colorbar(m, fraction=0.046, pad=0.04)
+
+    pyplot.tight_layout()
     pyplot.show()
 
 ## Features Correlations
@@ -211,7 +213,7 @@ def show_correlations(num_props, path):
     for i in range(num_props):
         for j in range(num_props):
             pyplot.subplot(num_props, num_props, cnt)
-            pyplot.title(f"{PROPS[i]} -- {PROPS[j]}")
+            pyplot.title(f"{PROPS[i]} -- {PROPS[j]}", fontsize=11)
 
             if i == j: # skip auto-correlation
                 pyplot.xlabel("Correlation")
@@ -220,8 +222,9 @@ def show_correlations(num_props, path):
                 cnt += 1
                 continue
 
+
             P = get_correlation_values(cors, i, j)
-            V = [np.round(p, 1) for p in P if not np.isnan(p)]
+            V = [p for p in P if not np.isnan(p)]
 
             sb.distplot(V) # TODO warning gets thrown out when using this
             pyplot.xlabel("Correlation")
@@ -263,17 +266,16 @@ def segment(X, outliers, num_components=3, normal=True):
     l = gmm.predict(V_full) # provides a gmm component to all data points
     return l.reshape(n,m)
 
-def apply_segmentation(X, height_flag=False):
+def apply_segmentation(X, O, height_flag=False):
     """ Gets classification of pixels after segmentation
     Args:
         X (np.array): data
+        O (np.array): outliers
         height_flag (bool): flag to keep height property
     Returns:
         L (np.array): matrix of classification per pixel
         reduced_X (np.array): data after applying height flag
     """
-    O = extract_outliers(X)
-
     # NOTE keep height data for 2-components data set due to their direct correlation
     if height_flag:
         reduced_X = X
