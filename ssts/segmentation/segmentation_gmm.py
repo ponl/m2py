@@ -112,11 +112,6 @@ class SegmenterGMM(object):
         else:
             data = data.reshape(n, c)
 
-        if outliers is not None:
-            outliers = outliers.flatten()
-
-        data = SegmenterGMM.remove_outliers(data, outliers)
-
         if self.normalize:
             data = self.sst.transform(data) if self.zscale else SegmenterGMM.normalize_by_max(data)
 
@@ -124,8 +119,12 @@ class SegmenterGMM(object):
             data = self.pca.transform(data)
 
         labels = self.gmm.predict(data)
+        labels = np.reshape(labels, (h, w))
+        labels += 1 # all labels move up one
+        if outliers is not None:
+            labels *= (1 - outliers) # outliers map to label 0
 
-        return np.reshape(labels, (h, w))
+        return labels
 
 
     def fit_transform(self, data, outliers=None):
@@ -163,11 +162,11 @@ class SegmenterGMM(object):
         h, w, c = data.shape
         n = 2 * padding + 1
         wins = np.zeros((h * w, n**2, c))
-        for d in range(data.shape[2]):
+        for d in range(c):
             X = np.pad(data[:,:,d], padding, "constant")
             idx = 0
-            for i in range(padding, data.shape[0] + padding):
-                for j in range(padding, data.shape[1] + padding):
+            for i in range(padding, h + padding):
+                for j in range(padding, w + padding):
                     imin, imax = i - padding, i + padding + 1
                     jmin, jmax = j - padding, j + padding + 1
                     wins[idx, :, d] = X[imin:imax, jmin:jmax].flatten()
@@ -183,3 +182,4 @@ class SegmenterGMM(object):
     def normalize_by_max(data):
         m = np.max(np.abs(data), axis=0)
         return data / m
+

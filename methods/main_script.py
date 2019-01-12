@@ -30,11 +30,11 @@ mm.show_correlations(data.shape[2], DIR) # TODO needs to be tested with more dat
 # Shows a-priori (classification) property distributions
 mm.show_property_distributions(data, outliers)
 
-# Shows pixel classification after applying Gaussian mixture model
-L, reduced_data = mm.apply_segmentation(data, outliers, height_flag=True)
+# Shows pixel classification after applying Gaussian mixture model.
+# NOTE The height_flag keeps/removes the height property when classifying.
+L, reduced_data = mm.apply_segmentation(data, outliers, height_flag=False)
 mm.show_classification(L, reduced_data)
 
 # Shows a-posteriori (classification) property distributions
 mm.show_classification_distributions(L, data)
 
-# TODO finish watershed segmentation class
