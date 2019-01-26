@@ -33,7 +33,7 @@ def main():
     ## NOTE Segmentation example using outliers
     elif example_number == "1":
 
-        # Initialize GMM segmented
+        # Initialize GMM segmentation
         seg = seg_gmm.SegmenterGMM(n_components=3)
 
         # Get outliers
@@ -51,7 +51,7 @@ def main():
     ## NOTE Segmentation example with dimensionality reduction (PCA) across physical properties
     elif example_number == "2":
 
-        # Initialize GMM segmented
+        # Initialize GMM segmentation
         seg = seg_gmm.SegmenterGMM(n_components=2, embedding_dim=3)
 
         # Run segmentation
@@ -63,10 +63,22 @@ def main():
         # Plot classification distributions
         mm.show_classification_distributions(labels, data)
 
+        # Initialize Watershed segmentation
+        seg2 = seg_water.SegmenterWatershed(pers_thresh=2)
+
+        # Apply watershed segmentation on output of GMM segmentation
+        labels2 = seg2.fit_transform(labels)
+
+        # Plot watershed classification
+        mm.show_classification(labels2, data) # TODO why do all grains have same labels after watershed?
+
+        # Plot watershed classification distribution
+        mm.show_classification_distributions(labels2, data)
+
     ## NOTE Segmentation example with dimensionality reduction (PCA) across neighboring pixels and physical properties
     elif example_number == "3":
 
-        # Initialize GMM segmented
+        # Initialize GMM segmentation
         seg = seg_gmm.SegmenterGMM(n_components=3, padding=3, embedding_dim=10, zscale=True)
 
         # Run segmentation
@@ -81,7 +93,7 @@ def main():
     ## NOTE Segmentation example using persistence watershed on the height property of the material
     elif example_number == "4":
 
-        # Initialize GMM segmenter
+        # Initialize GMM segmentation
         seg = seg_water.SegmenterWatershed()
 
         # Choose material property to segment
