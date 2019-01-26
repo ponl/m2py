@@ -1,82 +1,85 @@
+import argparse
 import numpy as np
 import segmentation_gmm as seg_gmm
-from methods import main_methods as mm # NOTE SSTS directory must be in PYTHONPATh
+from methods import main_methods as mm # NOTE SSTS directory must be in PYTHONPATH
 
-which_example = 2
+def main():
+    # print command line arguments
+    p = argparse.ArgumentParser(description="""A script with examples on how to use segmentation code.""")
+    p.add_argument('data_path', help='Path to data.')
+    p.add_argument('example_number', help='Specifies which example to run.')
 
-## NOTE Segmentation example without using outliers
-if which_example == 0:
-
-    # Location of data
-    data_dir = "/Users/diegotorrejon/Projects/Other/SSTS/data/2componentfilms/combined/PTB7PC71BM_CBonly_ascast_fresh_500 nm_combined.npy"
+    args = p.parse_args()
+    example_number = args.example_number
+    data_dir = args.data_path
     data = np.load(data_dir)
 
-    # Initialize GMM segmenter
-    seg = seg_gmm.SegmenterGMM(n_components=3)
+    ## NOTE Segmentation example without using outliers
+    if example_number == "0":
 
-    # Run segmentation
-    labels = seg.fit_transform(data)
+        # Initialize GMM segmenter
+        seg = seg_gmm.SegmenterGMM(n_components=3)
 
-    # Plot classification
-    mm.show_classification(labels, data)
+        # Run segmentation
+        labels = seg.fit_transform(data)
 
-    # Plot classification distributions
-    mm.show_classification_distributions(labels, data)
+        # Plot classification
+        mm.show_classification(labels, data)
 
-## NOTE Segmentation example using outliers
-if which_example == 1:
+        # Plot classification distributions
+        mm.show_classification_distributions(labels, data)
 
-    data_dir = "/Users/diegotorrejon/Projects/Other/SSTS/data/nanowires/combined/100-0_48_NW-1_combined.npy"
-    data = np.load(data_dir)
+    ## NOTE Segmentation example using outliers
+    elif example_number == "1":
 
-    # Initialize GMM segmented
-    seg = seg_gmm.SegmenterGMM(n_componets=3)
+        # Initialize GMM segmented
+        seg = seg_gmm.SegmenterGMM(n_components=3)
 
-    # Get outliers
-    outliers = mm.extract_outliers(data)
+        # Get outliers
+        outliers = mm.extract_outliers(data)
 
-    # Run segmentation
-    labels = seg.fit_transform(data, outliers)
+        # Run segmentation
+        labels = seg.fit_transform(data, outliers)
 
-    # Plot classification
-    mm.show_classification(labels, data)
+        # Plot classification
+        mm.show_classification(labels, data)
 
-    # Plot classification distributions
-    mm.show_classification_distributions(labels, data)
+        # Plot classification distributions
+        mm.show_classification_distributions(labels, data)
 
-## NOTE Segmentation example with dimensionality reduction (PCA) across physical properties
-if which_example == 2:
+    ## NOTE Segmentation example with dimensionality reduction (PCA) across physical properties
+    elif example_number == "2":
 
-    data_dir = "/Users/diegotorrejon/Projects/Other/SSTS/data/2componentfilms/combined/PTB7PC71BM_CBonly_ascast_fresh_500 nm_combined.npy"
-    data = np.load(data_dir)
+        # Initialize GMM segmented
+        seg = seg_gmm.SegmenterGMM(n_components=2, embedding_dim=3)
 
-    # Initialize GMM segmented
-    seg = seg_gmm.SegmenterGMM(n_components=2, embedding_dim=3)
+        # Run segmentation
+        labels = seg.fit_transform(data)
 
-    # Run segmentation
-    labels = seg.fit_transform(data)
+        # Plot classification
+        mm.show_classification(labels, data)
 
-    # Plot classification
-    mm.show_classification(labels, data)
+        # Plot classification distributions
+        mm.show_classification_distributions(labels, data)
 
-    # Plot classification distributions
-    mm.show_classification_distributions(labels, data)
+    ## NOTE Segmentation example with dimensionality reduction (PCA) across neighboring pixels and physical properties
+    elif example_number == "3":
 
-## NOTE Segmentation example with dimensionality reduction (PCA) across neighboring pixels and physical properties
-if which_example == 3:
+        # Initialize GMM segmented
+        seg = seg_gmm.SegmenterGMM(n_components=3, padding=3, embedding_dim=10, zscale=True)
 
-    data_dir = "/Users/diegotorrejon/Projects/Other/SSTS/data/2componentfilms/combined/PTB7PC71BM_CBonly_ascast_fresh_500 nm_combined.npy"
-    data = np.load(data_dir)
+        # Run segmentation
+        labels = seg.fit_transform(data)
 
-    # Initialize GMM segmented
-    seg = seg_gmm.SegmenterGMM(n_components=3, padding=3, embedding_dim=10, zscale=True)
+        # Plot classification
+        mm.show_classification(labels, data)
 
-    # Run segmentation
-    labels = seg.fit_transform(data)
+        # Plot classification distributions
+        mm.show_classification_distributions(labels, data)
 
-    # Plot classification
-    mm.show_classification(labels, data)
+    else:
+        print(f'Wrong example number inputted: {example_number}.')
 
-    # Plot classification distributions
-    mm.show_classification_distributions(labels, data)
+if __name__ == '__main__':
+    main()
 
