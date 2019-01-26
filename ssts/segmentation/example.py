@@ -1,6 +1,7 @@
 import argparse
 import numpy as np
 import segmentation_gmm as seg_gmm
+import segmentation_watershed as seg_water
 from methods import main_methods as mm # NOTE SSTS directory must be in PYTHONPATH
 
 def main():
@@ -77,6 +78,25 @@ def main():
         # Plot classification distributions
         mm.show_classification_distributions(labels, data)
 
+    ## NOTE Segmentation example using persistence watershed on the height property of the material
+    elif example_number == "4":
+
+        # Initialize GMM segmenter
+        seg = seg_water.SegmenterWatershed()
+
+        # Choose material property to segment
+        prop_data = data[:,:,4] # NOTE height
+
+        # Run segmentation
+        labels = seg.fit_transform(prop_data)
+
+        # Plot classification
+        mm.show_classification(labels, data)
+
+        # Plot classification distributions
+        mm.show_classification_distributions(labels, data)
+
+    ## NOTE Not valid example numbers
     else:
         print(f'Wrong example number inputted: {example_number}.')
 

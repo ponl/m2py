@@ -1,6 +1,8 @@
 import logging
-import numpy as np
+
 from collections import Counter
+
+import numpy as np
 from sklearn.mixture import GaussianMixture
 from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA

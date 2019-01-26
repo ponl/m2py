@@ -32,7 +32,7 @@ def show_boundaries(data):
     Args:
         data (np array): data
     """
-    fig = pyplot.figure(figsize=(16, 30), dpi= 80, facecolor='w', edgecolor='k')
+    fig = pyplot.figure(figsize=(16, 30), dpi=80, facecolor='w', edgecolor='k')
     cnt = 1
     for i in range(data.shape[2]):
         x = data[:,:,i]
@@ -61,7 +61,7 @@ def show_property_distributions(data, outliers):
         data (np array): data
         outliers (np array): outliers
     """
-    fig = pyplot.figure(figsize=(15, 10), dpi= 80, facecolor='w', edgecolor='k')
+    fig = pyplot.figure(figsize=(15, 10), dpi=80, facecolor='w', edgecolor='k')
 
     h, w, c = data.shape
     for j in range(c):
@@ -298,7 +298,7 @@ def show_classification(labels, reduced_data):
         reduced_data (np.array): data after applying height flag
     """
     c = reduced_data.shape[2]
-    fig = pyplot.figure(figsize=(16, 30), dpi= 80, facecolor='w', edgecolor='k')
+    fig = pyplot.figure(figsize=(16, 30), dpi=80, facecolor='w', edgecolor='k')
     cnt = 1
     for i in range(c):
         pyplot.subplot(3,4,cnt)
@@ -309,7 +309,7 @@ def show_classification(labels, reduced_data):
 
         pyplot.subplot(3,4,cnt)
         pyplot.title("Segmentation")
-        m = pyplot.imshow(labels)
+        m = pyplot.imshow(labels, cmap="gist_ncar")
         pyplot.colorbar(m, fraction=0.046, pad=0.04)
         cnt += 1
 
@@ -322,8 +322,12 @@ def show_classification_distributions(labels, data):
         labels (np.array): matrix of classification per pixel
         data (np.array): data
     """
+    unique_labels = list(np.unique(labels))
+    if 0 in unique_labels: # skip outliers AND borders in watershed segmentation
+        unique_labels.remove(0)
+
     c = data.shape[2]
-    fig = pyplot.figure(figsize=(20, 20), dpi= 80, facecolor='w', edgecolor='k')
+    fig = pyplot.figure(figsize=(20, 20), dpi=80, facecolor='w', edgecolor='k')
     cnt = 1
     for i in range(c):
         pyplot.subplot(3,4,cnt)
@@ -334,7 +338,7 @@ def show_classification_distributions(labels, data):
 
         pyplot.subplot(3,4,cnt)
         pyplot.title(PROPS[i])
-        for j in range(1, np.max(labels) + 1): # skip outliers
+        for j in unique_labels: # skip outliers
             pyplot.hist(data[:,:,i][labels == j], 100, alpha=0.3, density=True)
 
         cnt += 1
