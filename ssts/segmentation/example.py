@@ -63,7 +63,7 @@ def main():
         # Plot classification distributions
         mm.show_classification_distributions(labels, data)
 
-        # Initialize Watershed segmentation
+        # Initialize Watershed segmentation # NOTE this module can be applied after any example
         seg2 = seg_water.SegmenterWatershed(pers_thresh=2)
 
         # Apply watershed segmentation on output of GMM segmentation
