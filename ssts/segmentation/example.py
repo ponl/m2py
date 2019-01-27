@@ -19,7 +19,7 @@ def main():
     if example_number == "0":
 
         # Initialize GMM segmenter
-        seg = seg_gmm.SegmenterGMM(n_components=3)
+        seg = seg_gmm.SegmenterGMM(n_components=2)
 
         # Run segmentation
         labels = seg.fit_transform(data)
@@ -34,7 +34,7 @@ def main():
     elif example_number == "1":
 
         # Initialize GMM segmentation
-        seg = seg_gmm.SegmenterGMM(n_components=3)
+        seg = seg_gmm.SegmenterGMM(n_components=2)
 
         # Get outliers
         outliers = mm.extract_outliers(data)
@@ -43,10 +43,12 @@ def main():
         labels = seg.fit_transform(data, outliers)
 
         # Plot classification
-        mm.show_classification(labels, data)
+        no_outliers_data = np.copy(data)
+        no_outliers_data[outliers==1] = 0 # remove outliers from data
+        mm.show_classification(labels, no_outliers_data) # uses data without outliers
 
         # Plot classification distributions
-        mm.show_classification_distributions(labels, data)
+        mm.show_classification_distributions(labels, no_outliers_data) # uses data without outliers
 
     ## NOTE Segmentation example with dimensionality reduction (PCA) across physical properties
     elif example_number == "2":
@@ -78,7 +80,7 @@ def main():
     ## NOTE Segmentation example with dimensionality reduction (PCA) across neighboring pixels and physical properties
     elif example_number == "3":
 
-        # Initialize GMM segmentation
+        # Initialize GMM segmentation # TODO need to optimize these parameters
         seg = seg_gmm.SegmenterGMM(n_components=3, padding=3, embedding_dim=10, zscale=True)
 
         # Run segmentation

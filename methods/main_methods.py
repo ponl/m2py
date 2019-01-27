@@ -115,9 +115,10 @@ def show_outliers(data, outliers, height_index=HEIGHT_INDEX):
     pyplot.imshow(outliers, aspect='auto')
     pyplot.title('Height Outliers')
 
-    data[outliers == 1] = 0
+    no_outliers_data = np.copy(data)
+    no_outliers_data[outliers == 1] = 0
     pyplot.subplot(1,3,3)
-    m = pyplot.imshow(data[:,:,height_index], aspect='auto')
+    m = pyplot.imshow(no_outliers_data[:,:,height_index], aspect='auto')
     pyplot.title('Height')
     pyplot.colorbar(m, fraction=0.046, pad=0.04)
 
@@ -223,7 +224,6 @@ def show_correlations(num_props, path):
                 cnt += 1
                 continue
 
-
             P = get_correlation_values(cors, i, j)
             V = [p for p in P if not np.isnan(p)]
 
@@ -237,7 +237,7 @@ def show_correlations(num_props, path):
     pyplot.show()
 
 ## Mixture of Gaussians Model
-def segment(data, outliers, num_components=2, normal=True):
+def segment(data, outliers, num_components=2):
     """ Classifies each pixel into components using a Gaussian mixture model
     Args:
         data (np.array): data
@@ -249,61 +249,52 @@ def segment(data, outliers, num_components=2, normal=True):
     """
     h, w, c = data.shape
     n = h * w
+
+    # Normalize full data for prediction
     data = data.reshape(n, c)
+    m = np.max(np.abs(data), axis=0)
+    normal_data = data / m
 
-    if normal: # maps domain to [-1,1] per channel
-        m = np.max(abs(data), axis=0)
-        normal_data = data / m
-    else:
-        normal_data = data
-
+    # Normalize data without outliers for fitting
     outliers = outliers.flatten()
-    V = [normal_data[i] for i in range(n) if not outliers[i]]
-    V_full = [normal_data[i] for i in range(n)]
+    no_outliers_data = [data[i] for i in range(n) if not outliers[i]]
+    m = np.max(np.abs(no_outliers_data), axis=0)
+    normal_no_outliers_data = no_outliers_data / m
 
     gmm = GaussianMixture(n_components=num_components, covariance_type='full')
-    gmm.fit(V)
+    gmm.fit(normal_no_outliers_data)
 
-    l = gmm.predict(V_full) # provides a gmm component to all data points
+    l = gmm.predict(normal_data) # provides a gmm component to all data points
     return l.reshape(h, w)
 
-def apply_segmentation(data, outliers, height_flag=False):
+def apply_segmentation(data, outliers):
     """ Gets classification of pixels after segmentation
     Args:
         data (np.array): data
         outliers (np.array): outliers
-        height_flag (bool): flag to keep height property
     Returns:
         labels (np.array): matrix of classification per pixel
-        reduced_data (np.array): data after applying height flag
     """
-    # NOTE keep height data for 2-components data set due to their direct correlation
-    if height_flag:
-        reduced_data = data
-    else: # remove it for other data types to avoid hurting the classification
-        reduced_data = np.delete(data, HEIGHT_INDEX, axis=2)
-
-    labels = segment(reduced_data, outliers, normal=True)
-    reduced_data[outliers==1] = 0 # remove outliers from data
+    labels = segment(data, outliers)
 
     labels += 1 # all labels move up one
     labels *= (1 - outliers) # outliers map to label 0
 
-    return labels, reduced_data
+    return labels
 
-def show_classification(labels, reduced_data):
+def show_classification(labels, data):
     """ Shows classification of pixels after segmentation
     Args:
         labels (np.array): matrix of classification per pixel
-        reduced_data (np.array): data after applying height flag
+        data (np.array): data
     """
-    c = reduced_data.shape[2]
+    c = data.shape[2]
     fig = pyplot.figure(figsize=(16, 30), dpi=80, facecolor='w', edgecolor='k')
     cnt = 1
     for i in range(c):
         pyplot.subplot(3,4,cnt)
         pyplot.title(PROPS[i])
-        m = pyplot.imshow(reduced_data[:,:,i])
+        m = pyplot.imshow(data[:,:,i])
         pyplot.colorbar(m, fraction=0.046, pad=0.04)
         cnt += 1
 
