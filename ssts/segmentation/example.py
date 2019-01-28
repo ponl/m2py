@@ -54,28 +54,28 @@ def main():
     elif example_number == "2":
 
         # Initialize GMM segmentation
-        seg = seg_gmm.SegmenterGMM(n_components=2, embedding_dim=3)
+        pre_seg = seg_gmm.SegmenterGMM(n_components=2, embedding_dim=3)
 
         # Run segmentation
-        labels = seg.fit_transform(data)
+        pre_labels = pre_seg.fit_transform(data)
 
         # Plot classification
-        mm.show_classification(labels, data)
+        #mm.show_classification(pre_labels, data)
 
         # Plot classification distributions
-        mm.show_classification_distributions(labels, data)
+        #mm.show_classification_distributions(pre_labels, data)
 
         # Initialize Watershed segmentation # NOTE this module can be applied after any example
-        seg2 = seg_water.SegmenterWatershed(pers_thresh=2)
+        post_seg = seg_water.SegmenterWatershed(pers_thresh=0.5) # TODO why is it stochastic?
 
         # Apply watershed segmentation on output of GMM segmentation
-        labels2 = seg2.fit_transform(labels)
+        post_labels = post_seg.fit_transform(pre_labels)
 
         # Plot watershed classification
-        mm.show_classification(labels2, data) # TODO why do all grains have same labels after watershed?
+        mm.show_classification(post_labels, data) # TODO why do all grains have same labels after watershed?
 
         # Plot watershed classification distribution
-        mm.show_classification_distributions(labels2, data)
+        #mm.show_classification_distributions(post_labels, data)
 
     ## NOTE Segmentation example with dimensionality reduction (PCA) across neighboring pixels and physical properties
     elif example_number == "3":
@@ -100,6 +100,27 @@ def main():
 
         # Choose material property to segment
         prop_data = data[:,:,4] # NOTE height
+
+        # Run segmentation
+        labels = seg.fit_transform(prop_data)
+
+        # Plot classification
+        mm.show_classification(labels, data)
+
+        # Plot classification distributions
+        mm.show_classification_distributions(labels, data)
+
+    ## NOTE Segmentation example using persistence watershed on the output of the sobel operator
+    elif example_number == "5":
+
+        # Show boundaries after applying Sobel operator
+        sobel_data = mm.show_boundaries(data)
+
+        # Choose material property to segment
+        prop_data = sobel_data[:,:,4] # NOTE height
+
+        # Initialize GMM segmentation
+        seg = seg_water.SegmenterWatershed(pers_thresh=2)
 
         # Run segmentation
         labels = seg.fit_transform(prop_data)

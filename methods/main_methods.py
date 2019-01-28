@@ -33,6 +33,7 @@ def show_boundaries(data):
         data (np array): data
     """
     fig = pyplot.figure(figsize=(16, 30), dpi=80, facecolor='w', edgecolor='k')
+    sobel_data = np.zeros(data.shape)
     cnt = 1
     for i in range(data.shape[2]):
         x = data[:,:,i]
@@ -44,15 +45,20 @@ def show_boundaries(data):
         cnt += 1
 
         # Apply Sobel operator
+        x_sobel = sobel(x)
+        sobel_data[:,:,i] = x_sobel
+
         pyplot.subplot(3,4,cnt)
         pyplot.title(f"{PROPS[i]} Gradient")
-        m = pyplot.imshow(sobel(x))
+        m = pyplot.imshow(x_sobel)
         pyplot.colorbar(m, fraction=0.046, pad=0.04)
 
         cnt += 1
 
     pyplot.tight_layout()
     pyplot.show()
+
+    return sobel_data
 
 ## Properties Distributions
 def show_property_distributions(data, outliers):
@@ -330,7 +336,7 @@ def show_classification_distributions(labels, data):
         pyplot.subplot(3,4,cnt)
         pyplot.title(PROPS[i])
         for j in unique_labels: # skip outliers
-            pyplot.hist(data[:,:,i][labels == j], 100, alpha=0.3, density=True)
+            pyplot.hist(data[:,:,i][labels == j], 50, alpha=0.3, density=True)
 
         cnt += 1
         pyplot.grid()
