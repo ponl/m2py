@@ -54,28 +54,35 @@ def main():
     elif example_number == "2":
 
         # Initialize GMM segmentation
-        pre_seg = seg_gmm.SegmenterGMM(n_components=2, embedding_dim=3)
+        num_pca_components = 3
+        pre_seg = seg_gmm.SegmenterGMM(n_components=2, embedding_dim=num_pca_components)
 
         # Run segmentation
         pre_labels = pre_seg.fit_transform(data)
 
         # Plot classification
-        #mm.show_classification(pre_labels, data)
+        mm.show_classification(pre_labels, data)
 
         # Plot classification distributions
-        #mm.show_classification_distributions(pre_labels, data)
+        mm.show_classification_distributions(pre_labels, data)
+
+        # Handling PCA components from data
+        h, w, c = data.shape
+        n = h * w
+        pca_components = pre_seg.pca.transform(data.reshape(n, c)) # NOTE PCA was trained while fitting pre_seg
+        pca_components = pca_components.reshape(h, w, num_pca_components) # shape (512, 512, num_pca_components)
 
         # Initialize Watershed segmentation # NOTE this module can be applied after any example
-        post_seg = seg_water.SegmenterWatershed(pers_thresh=0.5) # TODO why is it stochastic?
+        post_seg = seg_water.SegmenterWatershed(pers_thresh=0.4) # TODO why is it stochastic?
 
         # Apply watershed segmentation on output of GMM segmentation
         post_labels = post_seg.fit_transform(pre_labels)
 
         # Plot watershed classification
-        mm.show_classification(post_labels, data) # TODO why do all grains have same labels after watershed?
+        mm.show_classification(post_labels, data)
 
         # Plot watershed classification distribution
-        #mm.show_classification_distributions(post_labels, data)
+        mm.show_classification_distributions(post_labels, data)
 
     ## NOTE Segmentation example with dimensionality reduction (PCA) across neighboring pixels and physical properties
     elif example_number == "3":
@@ -130,6 +137,27 @@ def main():
 
         # Plot classification distributions
         mm.show_classification_distributions(labels, data)
+
+    ## NOTE Segmentation example removing height property after outlier removal
+    elif example_number == "6":
+
+        # Initialize GMM segmentation
+        pre_seg = seg_gmm.SegmenterGMM(n_components=2, embedding_dim=3)
+
+        # Get outliers
+        outliers = mm.extract_outliers(data)
+
+        # Remove height property
+        no_height_data = np.delete(data, 4, axis=2)
+
+        # Run segmentation
+        pre_labels = pre_seg.fit_transform(no_height_data, outliers)
+
+        # Plot classification
+        mm.show_classification(pre_labels, data)
+
+        # Plot classification distributions
+        mm.show_classification_distributions(pre_labels, data)
 
     ## NOTE Not valid example numbers
     else:
