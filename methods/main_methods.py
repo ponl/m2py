@@ -11,6 +11,8 @@ from methods import config
 
 PROPS = config.data_properties
 HEIGHT_INDEX = config.height_index
+MAX_PIXEL = 255
+CMAP = pyplot.get_cmap('gist_ncar')
 
 ## Boundary Detection
 def sobel(data):
@@ -288,6 +290,14 @@ def apply_segmentation(data, outliers):
 
     return labels
 
+def get_unique_labels(labels):
+    """ Gets unique labels """
+    unique_labels = list(np.unique(labels))
+    if 0 in unique_labels: # skips outliers AND borders in watershed segmentation
+        unique_labels.remove(0)
+
+    return unique_labels
+
 def show_classification(labels, data):
     """ Shows classification of pixels after segmentation
     Args:
@@ -306,7 +316,7 @@ def show_classification(labels, data):
 
         pyplot.subplot(3,4,cnt)
         pyplot.title("Segmentation")
-        m = pyplot.imshow(labels, cmap="gist_ncar")
+        m = pyplot.imshow(labels, cmap=CMAP)
         pyplot.colorbar(m, fraction=0.046, pad=0.04)
         cnt += 1
 
@@ -319,28 +329,126 @@ def show_classification_distributions(labels, data):
         labels (np.array): matrix of classification per pixel
         data (np.array): data
     """
-    unique_labels = list(np.unique(labels))
-    if 0 in unique_labels: # skip outliers AND borders in watershed segmentation
-        unique_labels.remove(0)
+    unique_labels = get_unique_labels(labels)
 
     c = data.shape[2]
     fig = pyplot.figure(figsize=(20, 20), dpi=80, facecolor='w', edgecolor='k')
     cnt = 1
     for i in range(c):
-        pyplot.subplot(3,4,cnt)
-        pyplot.title(PROPS[i])
+        ax_l = pyplot.subplot(3,4,cnt)
+        cnt += 1
+        ax_l.set_title(PROPS[i])
         m = pyplot.imshow(data[:,:,i], aspect='auto')
         pyplot.colorbar(m, fraction=0.046, pad=0.04)
-        cnt += 1
 
-        pyplot.subplot(3,4,cnt)
-        pyplot.title(PROPS[i])
-        for j in unique_labels: # skip outliers
-            pyplot.hist(data[:,:,i][labels == j], 50, alpha=0.3, density=True)
-
+        ax_r = pyplot.subplot(3,4,cnt)
         cnt += 1
-        pyplot.grid()
+        ax_r.grid()
+        ax_r.set_title(PROPS[i])
+        for index, j in enumerate(unique_labels):
+            color_step = int((index + 1) * MAX_PIXEL / len(unique_labels))
+            ax_r.hist(data[:,:,i][labels == j], 50, alpha=0.8, density=True, color=CMAP(MAX_PIXEL - color_step))
 
     pyplot.tight_layout()
     pyplot.show()
+
+def show_grain_area_distribution(labels):
+    """ Computes a histogram of the number of pixels per label
+    Args:
+        labels (np.array): matrix of classification per pixel
+    """
+    unique_labels = get_unique_labels(labels)
+    grain_areas = [np.sum(labels==l) for l in unique_labels]
+    normal_grain_areas = grain_areas / np.sum(grain_areas) * 100
+
+    pyplot.figure(figsize=(18,5), dpi=80, facecolor='w', edgecolor='k')
+    pyplot.subplot(1,3,1)
+    pyplot.plot(unique_labels, grain_areas, 'ro')
+    pyplot.plot(unique_labels, grain_areas, 'b')
+    pyplot.xlabel('Label numbering')
+    pyplot.ylabel('Grain area')
+    pyplot.title('Grain Area (number of pixels)')
+    pyplot.grid()
+
+    pyplot.subplot(1,3,2)
+    pyplot.plot(unique_labels, np.log10(grain_areas), 'ro')
+    pyplot.plot(unique_labels, np.log10(grain_areas), 'b')
+    pyplot.xlabel('Label numbering')
+    pyplot.ylabel('Log grain area')
+    pyplot.title('Log Grain Area (number of pixels)')
+    pyplot.grid()
+
+    pyplot.subplot(1,3,3)
+    pyplot.plot(unique_labels, normal_grain_areas, 'ro')
+    pyplot.plot(unique_labels, normal_grain_areas, 'b')
+    pyplot.xlabel('Label numbering')
+    pyplot.ylabel('Percentage in image')
+    pyplot.title('Grain Percentage in Image')
+    pyplot.grid()
+
+    pyplot.show()
+
+
+def show_distributions_together(labels, data):
+    """ Shows distributions of classes after segmentation
+    Args:
+        labels (np.array): matrix of classification per pixel
+        data (np.array): data
+    """
+    unique_labels = get_unique_labels(labels)
+    grain_labels = [l for l in unique_labels if np.sum(labels==l) > 1000]
+
+    c = data.shape[2]
+    fig = pyplot.figure(figsize=(20, 20), dpi=80, facecolor='w', edgecolor='k')
+    cnt = 1
+    for i in range(c):
+        ax_l = pyplot.subplot(3,4,cnt)
+        cnt += 1
+        ax_l.set_title(PROPS[i])
+        m = ax_l.imshow(data[:,:,i], aspect='auto')
+
+        ax_r = pyplot.subplot(3,4,cnt)
+        cnt += 1
+        ax_r.grid()
+        ax_r.set_title(PROPS[i])
+        for index, j in enumerate(grain_labels): # plots mask and distribution per class
+            color_step = int((index + 1) * MAX_PIXEL / len(grain_labels))
+            mask = np.ma.masked_where(labels!=j, MAX_PIXEL * np.ones(labels.shape) - color_step)
+            ax_l.imshow(mask, alpha=0.8, cmap=CMAP, aspect='auto', vmin=0, vmax=MAX_PIXEL)
+
+            ax_r.hist(data[:,:,i][labels == j], 50, alpha=0.8, density=True, color=CMAP(MAX_PIXEL - color_step))
+
+    pyplot.tight_layout()
+    pyplot.show()
+
+def show_distributions_separately(labels, data):
+    """ Shows distributions of each class separately
+    Args:
+        labels (np.array): matrix of classification per pixel
+        data (np.array): data
+    """
+    unique_labels = get_unique_labels(labels)
+    grain_labels = [l for l in unique_labels if np.sum(labels==l) > 1000]
+
+    for gl in grain_labels:
+        c = data.shape[2]
+        fig = pyplot.figure(figsize=(20, 20), dpi=80, facecolor='w', edgecolor='k')
+        cnt = 1
+        for i in range(c):
+            ax_l = pyplot.subplot(3,4,cnt)
+            cnt += 1
+            ax_l.set_title(PROPS[i])
+            m = ax_l.imshow(data[:,:,i], aspect='auto')
+            mask = np.ma.masked_where(labels==gl, np.ones(labels.shape))
+            ax_l.imshow(mask, alpha=1, cmap='bone', aspect='auto', vmin=0, vmax=1)
+            pyplot.colorbar(m, fraction=0.046, pad=0.04)
+
+            ax_r = pyplot.subplot(3,4,cnt)
+            cnt += 1
+            ax_r.set_title(PROPS[i])
+            ax_r.hist(data[:,:,i][labels == gl], 50, alpha=0.6, density=True, color='k')
+            ax_r.grid()
+
+        pyplot.tight_layout()
+        pyplot.show()
 
