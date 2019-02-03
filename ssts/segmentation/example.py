@@ -51,8 +51,8 @@ def main():
         mm.show_classification_distributions(labels, no_outliers_data)
 
         # Plot classification distributions with masks
-        colors_used = mm.show_distributions_together(labels, data) # all classes plotted together
-        mm.show_distributions_separately(labels, no_outliers_data, colors_used) # each class per plot
+        mm.show_distributions_together(labels, data) # all classes plotted together
+        mm.show_distributions_separately(labels, no_outliers_data) # each class per plot
 
     ## NOTE Segmentation example with dimensionality reduction (PCA) across physical properties
     elif example_number == "2":
@@ -89,8 +89,8 @@ def main():
         mm.show_grain_area_distribution(post_labels) # all grains plotted together
 
         # Plot distributions of segmented grains
-        colors_used = mm.show_distributions_together(post_labels, data) # all grains plotted together
-        mm.show_distributions_separately(post_labels, data, colors_used) # each grain per plot
+        mm.show_distributions_together(post_labels, data) # all grains plotted together
+        mm.show_distributions_separately(post_labels, data) # each grain per plot
 
     ## NOTE Segmentation example with dimensionality reduction (PCA) across neighboring pixels and physical properties
     elif example_number == "3":

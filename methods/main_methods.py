@@ -405,17 +405,14 @@ def show_distributions_together(labels, data):
         ax_l = pyplot.subplot(3,4,cnt)
         cnt += 1
         ax_l.set_title(PROPS[i])
-        m = ax_l.imshow(data[:,:,i], aspect='auto')
 
         ax_r = pyplot.subplot(3,4,cnt)
         cnt += 1
         ax_r.grid()
         ax_r.set_title(PROPS[i])
 
-        colors_used = []
         for index, j in enumerate(grain_labels): # plots mask and distribution per class
             color_step = int((index + 1) * MAX_PIXEL / len(grain_labels))
-            colors_used.append(MAX_PIXEL - color_step)
             mask = np.ma.masked_where(labels!=j, MAX_PIXEL * np.ones(labels.shape) - color_step)
             ax_l.imshow(mask, alpha=0.8, cmap=CMAP, aspect='auto', vmin=0, vmax=MAX_PIXEL)
 
@@ -423,20 +420,18 @@ def show_distributions_together(labels, data):
 
     pyplot.tight_layout()
     pyplot.show()
-    return colors_used
 
-def show_distributions_separately(labels, data, colors_used=None):
+def show_distributions_separately(labels, data):
     """ Shows distributions of each class separately
     Args:
         labels (np.array): matrix of classification per pixel
         data (np.array): data
-        colors_used (list): colors used in show_distributions_together method
     """
     unique_labels = get_unique_labels(labels)
     grain_labels = [l for l in unique_labels if np.sum(labels==l) > 1000]
 
     for index, gl in enumerate(grain_labels):
-        color = CMAP(colors_used[index]) if colors_used is not None else 'k'
+        color_step = int((index + 1) * MAX_PIXEL / len(grain_labels))
         c = data.shape[2]
         fig = pyplot.figure(figsize=(20, 20), dpi=80, facecolor='w', edgecolor='k')
         cnt = 1
@@ -452,7 +447,7 @@ def show_distributions_separately(labels, data, colors_used=None):
             ax_r = pyplot.subplot(3,4,cnt)
             cnt += 1
             ax_r.set_title(PROPS[i])
-            ax_r.hist(data[:,:,i][labels == gl], 50, alpha=0.6, density=True, color=color)
+            ax_r.hist(data[:,:,i][labels == gl], 50, alpha=0.6, density=True, color=CMAP(MAX_PIXEL - color_step))
             ax_r.grid()
 
         pyplot.tight_layout()
