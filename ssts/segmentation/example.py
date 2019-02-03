@@ -47,8 +47,12 @@ def main():
         no_outliers_data[outliers==1] = 0 # remove outliers from data
         mm.show_classification(labels, no_outliers_data) # uses data without outliers
 
-        # Plot classification distributions
-        mm.show_classification_distributions(labels, no_outliers_data) # uses data without outliers
+        # Plot classification distribution
+        mm.show_classification_distributions(labels, no_outliers_data)
+
+        # Plot classification distributions with masks
+        colors_used = mm.show_distributions_together(labels, data) # all classes plotted together
+        mm.show_distributions_separately(labels, no_outliers_data, colors_used) # each class per plot
 
     ## NOTE Segmentation example with dimensionality reduction (PCA) across physical properties
     elif example_number == "2":
@@ -73,7 +77,7 @@ def main():
         pca_components = pca_components.reshape(h, w, num_pca_components) # shape (512, 512, num_pca_components)
 
         # Initialize Watershed segmentation # NOTE this module can be applied after any example
-        post_seg = seg_water.SegmenterWatershed(pers_thresh=0.4) # TODO why is it stochastic?
+        post_seg = seg_water.SegmenterWatershed(pers_thresh=0.3) # TODO why is it stochastic?
 
         # Apply watershed segmentation on output of GMM segmentation
         post_labels = post_seg.fit_transform(pre_labels)
@@ -81,8 +85,12 @@ def main():
         # Plot watershed classification
         mm.show_classification(post_labels, data)
 
-        # Plot watershed classification distribution
-        mm.show_classification_distributions(post_labels, data)
+        # Plot area distribution of grains
+        mm.show_grain_area_distribution(post_labels) # all grains plotted together
+
+        # Plot distributions of segmented grains
+        colors_used = mm.show_distributions_together(post_labels, data) # all grains plotted together
+        mm.show_distributions_separately(post_labels, data, colors_used) # each grain per plot
 
     ## NOTE Segmentation example with dimensionality reduction (PCA) across neighboring pixels and physical properties
     elif example_number == "3":
