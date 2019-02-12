@@ -176,7 +176,7 @@ class SegmenterGMM(object):
 
         if flatten:
             l = wins.shape[1]
-            wins = np.reshape(wins, (-1, l * c))
+            wins = np.reshape(wins, (-1, l * c)) # (pixels) x (properties + neighbors)
 
         return wins
 

@@ -11,7 +11,10 @@ from methods import config
 
 PROPS = config.data_properties
 HEIGHT_INDEX = config.height_index
+
 MAX_PIXEL = 255
+LABEL_THRESH = 1000 # each label must have more than this number of pixels
+
 CMAP = pyplot.get_cmap('gist_ncar')
 
 ## Boundary Detection
@@ -304,21 +307,27 @@ def show_classification(labels, data):
         labels (np.array): matrix of classification per pixel
         data (np.array): data
     """
+    unique_labels = get_unique_labels(labels)
+    grain_labels = [l for l in unique_labels if np.sum(labels==l) > LABEL_THRESH]
+
     c = data.shape[2]
     fig = pyplot.figure(figsize=(16, 30), dpi=80, facecolor='w', edgecolor='k')
     cnt = 1
     for i in range(c):
-        pyplot.subplot(3,4,cnt)
-        pyplot.title(PROPS[i])
-        m = pyplot.imshow(data[:,:,i])
-        pyplot.colorbar(m, fraction=0.046, pad=0.04)
+        ax_l = pyplot.subplot(3,4,cnt)
         cnt += 1
+        ax_l.set_title(PROPS[i])
+        m = ax_l.imshow(data[:,:,i])
+        pyplot.colorbar(m, fraction=0.046, pad=0.04)
 
-        pyplot.subplot(3,4,cnt)
-        pyplot.title("Segmentation")
-        m = pyplot.imshow(labels, cmap=CMAP)
-        pyplot.colorbar(m, fraction=0.046, pad=0.04)
+        ax_r = pyplot.subplot(3,4,cnt)
         cnt += 1
+        ax_r.set_title("Segmentation")
+        for index, j in enumerate(grain_labels): # plots mask and distribution per class
+            color_step = MAX_PIXEL - int((index + 1) * MAX_PIXEL / len(grain_labels))
+            mask = np.ma.masked_where(labels!=j, color_step * np.ones(labels.shape))
+            m = ax_r.imshow(mask, alpha=0.8, cmap=CMAP, vmin=0, vmax=MAX_PIXEL)
+        pyplot.colorbar(m, fraction=0.046, pad=0.04)
 
     pyplot.tight_layout()
     pyplot.show()
@@ -330,6 +339,7 @@ def show_classification_distributions(labels, data):
         data (np.array): data
     """
     unique_labels = get_unique_labels(labels)
+    grain_labels = [l for l in unique_labels if np.sum(labels==l) > LABEL_THRESH]
 
     c = data.shape[2]
     fig = pyplot.figure(figsize=(20, 20), dpi=80, facecolor='w', edgecolor='k')
@@ -338,16 +348,16 @@ def show_classification_distributions(labels, data):
         ax_l = pyplot.subplot(3,4,cnt)
         cnt += 1
         ax_l.set_title(PROPS[i])
-        m = pyplot.imshow(data[:,:,i], aspect='auto')
+        m = ax_l.imshow(data[:,:,i], aspect='auto')
         pyplot.colorbar(m, fraction=0.046, pad=0.04)
 
         ax_r = pyplot.subplot(3,4,cnt)
         cnt += 1
         ax_r.grid()
         ax_r.set_title(PROPS[i])
-        for index, j in enumerate(unique_labels):
-            color_step = int((index + 1) * MAX_PIXEL / len(unique_labels))
-            ax_r.hist(data[:,:,i][labels == j], 50, alpha=0.8, density=True, color=CMAP(MAX_PIXEL - color_step))
+        for index, j in enumerate(grain_labels):
+            color_step = MAX_PIXEL - int((index + 1) * MAX_PIXEL / len(grain_labels))
+            ax_r.hist(data[:,:,i][labels == j], 30, alpha=0.8, density=True, color=CMAP(color_step))
 
     pyplot.tight_layout()
     pyplot.show()
@@ -396,7 +406,7 @@ def show_distributions_together(labels, data):
         data (np.array): data
     """
     unique_labels = get_unique_labels(labels)
-    grain_labels = [l for l in unique_labels if np.sum(labels==l) > 1000]
+    grain_labels = [l for l in unique_labels if np.sum(labels==l) > LABEL_THRESH]
 
     c = data.shape[2]
     fig = pyplot.figure(figsize=(20, 20), dpi=80, facecolor='w', edgecolor='k')
@@ -412,11 +422,11 @@ def show_distributions_together(labels, data):
         ax_r.set_title(PROPS[i])
 
         for index, j in enumerate(grain_labels): # plots mask and distribution per class
-            color_step = int((index + 1) * MAX_PIXEL / len(grain_labels))
-            mask = np.ma.masked_where(labels!=j, MAX_PIXEL * np.ones(labels.shape) - color_step)
+            color_step = MAX_PIXEL - int((index + 1) * MAX_PIXEL / len(grain_labels))
+            mask = np.ma.masked_where(labels!=j, color_step * np.ones(labels.shape))
             ax_l.imshow(mask, alpha=0.8, cmap=CMAP, aspect='auto', vmin=0, vmax=MAX_PIXEL)
 
-            ax_r.hist(data[:,:,i][labels == j], 50, alpha=0.8, density=True, color=CMAP(MAX_PIXEL - color_step))
+            ax_r.hist(data[:,:,i][labels == j], 30, alpha=0.8, density=True, color=CMAP(color_step))
 
     pyplot.tight_layout()
     pyplot.show()
@@ -428,10 +438,10 @@ def show_distributions_separately(labels, data):
         data (np.array): data
     """
     unique_labels = get_unique_labels(labels)
-    grain_labels = [l for l in unique_labels if np.sum(labels==l) > 1000]
+    grain_labels = [l for l in unique_labels if np.sum(labels==l) > LABEL_THRESH]
 
     for index, gl in enumerate(grain_labels):
-        color_step = int((index + 1) * MAX_PIXEL / len(grain_labels))
+        color_step = MAX_PIXEL - int((index + 1) * MAX_PIXEL / len(grain_labels))
         c = data.shape[2]
         fig = pyplot.figure(figsize=(20, 20), dpi=80, facecolor='w', edgecolor='k')
         cnt = 1
@@ -447,7 +457,7 @@ def show_distributions_separately(labels, data):
             ax_r = pyplot.subplot(3,4,cnt)
             cnt += 1
             ax_r.set_title(PROPS[i])
-            ax_r.hist(data[:,:,i][labels == gl], 50, alpha=0.6, density=True, color=CMAP(MAX_PIXEL - color_step))
+            ax_r.hist(data[:,:,i][labels == gl], 30, alpha=0.6, density=True, color=CMAP(color_step))
             ax_r.grid()
 
         pyplot.tight_layout()

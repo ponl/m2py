@@ -16,7 +16,6 @@ class PersistenceWatershed(object):
         self.mt = None
 
     def train(self):
-
         rank = np.argsort(self.arr.flatten())
         for r in rank[::-1]:
             p = np.unravel_index(r, self.dim)
@@ -76,7 +75,7 @@ class PersistenceWatershed(object):
                 rlab[p] = 0
                 wvox.append(p)
                 continue
-            rlab[p] = PersistenceWatershed.find(relabel, self.lab[p])
+            rlab[p] = PersistenceWatershed.find(relabel, l)
 
         # Clean up false watersheds
         for p in wvox:
@@ -120,6 +119,8 @@ class PersistenceWatershed(object):
 
     @staticmethod
     def merge_tree(maxima, edges):
+        # maxima=(label, max value of label in data)
+        # edges=(label1, label2, max value of boundary in data)
         pairs = []
         values = {}
         components = {}
@@ -138,11 +139,12 @@ class PersistenceWatershed(object):
             if uc == vc:
                 continue
 
-            if values[vc] < values[uc]:
+            if values[vc] < values[uc]: # if later label has lower max
                 uc, vc = vc, uc
 
-            # source, target, persistence
+            # source, target, persistence (size of lower label hill)
             pairs.append((uc, vc, values[uc] - val))
-            components[uc] = components[vc]
+            components[uc] = components[vc] # lower label maps to higher label
 
         return pairs
+

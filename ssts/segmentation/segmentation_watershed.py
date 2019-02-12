@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 
 class SegmenterWatershed(object):
 
-    def __init__(self, normalize=True, smooth=True, pers_thresh=1):
+    def __init__(self, normalize=True, smooth=True, pers_thresh=0.5):
         """
         Args:
             normalize (bool): Normalize data before processing.
@@ -59,6 +59,12 @@ class SegmenterWatershed(object):
             logger.warning("Attempting to transform prior to fitting. You must call .fit() first.")
             return None
 
+        if self.normalize:
+            data = SegmenterWatershed.normalize_data(data)
+
+        if self.smooth:
+            data = SegmenterWatershed.smooth_data(data)
+
         labels = self.pws.apply_threshold(self.pers_thresh)
         if outliers is not None:
             labels *= (1 - outliers) # outliers map to label 0 which are borders between grains
@@ -86,7 +92,7 @@ class SegmenterWatershed(object):
 
     @staticmethod
     def normalize_data(data):
-        return (data - np.mean(data)) / np.std(data)
+        return np.abs(data) / np.max(np.abs(data))
 
     @staticmethod
     def smooth_data(data, window=3):
