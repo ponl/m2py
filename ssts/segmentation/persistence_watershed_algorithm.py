@@ -1,8 +1,7 @@
 import numpy as np
-from collections import defaultdict
+
 
 class PersistenceWatershed(object):
-
     def __init__(self, arr):
         self.WSHED = 0
         self.INIT = -1
@@ -44,7 +43,7 @@ class PersistenceWatershed(object):
                         if l0 == l1:
                             continue
 
-                        n0, n1 = [min(l0,l1), max(l0,l1)]
+                        n0, n1 = [min(l0, l1), max(l0, l1)]
                         if n1 not in self.dual[n0]:
                             self.dual[n0][n1] = -1 * np.inf
 
@@ -84,11 +83,11 @@ class PersistenceWatershed(object):
                 rlab[p] = list(L)[0]
 
         # Clean labels to avoid skips
-        ol2cl = {k: i+1 for i, k in enumerate(set(rlab.flatten())) if k != 0}
+        ol2cl = {k: i + 1 for i, k in enumerate(set(rlab.flatten())) if k != 0}
         ol2cl[0] = 0
         for i in range(rlab.shape[0]):
             for j in range(rlab.shape[1]):
-                rlab[i,j] = ol2cl[rlab[i,j]]
+                rlab[i, j] = ol2cl[rlab[i, j]]
 
         return rlab
 
@@ -103,7 +102,7 @@ class PersistenceWatershed(object):
 
     @staticmethod
     def get_neighbors(p, bounds, k=1):
-        N = [(p[0]+i, p[1]+j) for i in range(-k, k+1) for j in range(-k, k+1)]
+        N = [(p[0] + i, p[1] + j) for i in range(-k, k + 1) for j in range(-k, k + 1)]
         N = [n for n in N if (PersistenceWatershed.inbounds(n, bounds) and not (n[0] == p[0] and n[1] == p[1]))]
         return N
 
@@ -125,7 +124,7 @@ class PersistenceWatershed(object):
         values = {}
         components = {}
 
-        for (u,val) in maxima.items():
+        for (u, val) in maxima.items():
             values[u] = val
             components[u] = u
 
@@ -139,12 +138,11 @@ class PersistenceWatershed(object):
             if uc == vc:
                 continue
 
-            if values[vc] < values[uc]: # if later label has lower max
+            if values[vc] < values[uc]:  # if later label has lower max
                 uc, vc = vc, uc
 
             # source, target, persistence (size of lower label hill)
             pairs.append((uc, vc, values[uc] - val))
-            components[uc] = components[vc] # lower label maps to higher label
+            components[uc] = components[vc]  # lower label maps to higher label
 
         return pairs
-

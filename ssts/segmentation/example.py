@@ -1,22 +1,18 @@
 import argparse
+
 import numpy as np
 import segmentation_gmm as seg_gmm
 import segmentation_watershed as seg_water
-from methods import main_methods as mm # NOTE SSTS directory must be in PYTHONPATH
+from methods import main_methods as mm  # NOTE SSTS directory must be in PYTHONPATH
 
-from skimage import measure
-
-MAX_PIXEL = mm.MAX_PIXEL
-CMAP = mm.CMAP
-LABEL_THRESH = mm.LABEL_THRESH
 
 def main(data_path=None, example_number=None):
     if data_path is not None and example_number is not None:
         args = argparse.Namespace(data_path=data_path, example_number=example_number)
     else:
         p = argparse.ArgumentParser(description="""A script with examples on how to use segmentation code.""")
-        p.add_argument('data_path', help='Path to data.')
-        p.add_argument('example_number', help='Specifies which example to run.')
+        p.add_argument("data_path", help="Path to data.")
+        p.add_argument("example_number", help="Specifies which example to run.")
         args = p.parse_args()
 
     example_number = args.example_number
@@ -52,25 +48,25 @@ def main(data_path=None, example_number=None):
 
         # Plot classification without outliers
         no_outliers_data = np.copy(data)
-        no_outliers_data[outliers==1] = 0 # remove outliers from data
-        mm.show_classification(labels, no_outliers_data) # uses data without outliers
+        no_outliers_data[outliers == 1] = 0  # remove outliers from data
+        mm.show_classification(labels, no_outliers_data)  # uses data without outliers
 
         # Plot classification distribution
         mm.show_classification_distributions(labels, no_outliers_data)
 
         # Plot classification distributions with masks
-        mm.show_distributions_together(labels, no_outliers_data) # all classes plotted together
-        mm.show_distributions_separately(labels, no_outliers_data) # each class plotted per plot
+        mm.show_distributions_together(labels, no_outliers_data)  # all classes plotted together
+        mm.show_distributions_separately(labels, no_outliers_data)  # each class plotted per plot
 
     ## NOTE Segmentation example with dimensionality reduction (PCA) across physical properties
     elif example_number == "2":
 
         # Initialize GMM segmentation
         num_pca_components = 3
-        pre_seg = seg_gmm.SegmenterGMM(n_components=2, embedding_dim=num_pca_components)
+        seg = seg_gmm.SegmenterGMM(n_components=2, embedding_dim=num_pca_components)
 
         # Run segmentation
-        pre_labels = pre_seg.fit_transform(data)
+        pre_labels = seg.fit_transform(data)
 
         # Plot classification
         mm.show_classification(pre_labels, data)
@@ -81,12 +77,11 @@ def main(data_path=None, example_number=None):
         # Handling PCA components from data
         h, w, c = data.shape
         n = h * w
-        pca_components = pre_seg.pca.transform(data.reshape(n, c)) # NOTE PCA was trained while fitting pre_seg
-        pca_components = pca_components.reshape(h, w, num_pca_components) # shape (512, 512, num_pca_components)
+        pca_components = seg.pca.transform(data.reshape(n, c))  # NOTE PCA was trained while fitting pre_seg
+        pca_components = pca_components.reshape(h, w, num_pca_components)  # shape (512, 512, num_pca_components)
 
         # Create unique masks per grain
-        post_labels = measure.label(pre_labels, connectivity=2)
-        post_labels += 1 # needed since 0 label gets removed
+        post_labels = seg.get_grains(pre_labels)
 
         # Plot grain classification
         mm.show_classification(post_labels, data)
@@ -95,8 +90,8 @@ def main(data_path=None, example_number=None):
         mm.show_grain_area_distribution(post_labels)
 
         # Plot distributions of segmented grains
-        mm.show_distributions_together(post_labels, data) # all grains plotted together
-        mm.show_distributions_separately(post_labels, data) # each grain plotted per plot
+        mm.show_distributions_together(post_labels, data)  # all grains plotted together
+        mm.show_distributions_separately(post_labels, data)  # each grain plotted per plot
 
     ## NOTE Segmentation example with dimensionality reduction (PCA) across neighboring pixels and physical properties
     elif example_number == "3":
@@ -123,11 +118,16 @@ def main(data_path=None, example_number=None):
         seg = seg_water.SegmenterWatershed()
 
         # Choose material property to segment
-        prop_data = data[:,:,4] # NOTE height
+        prop_data = data[:, :, 4]  # NOTE height
 
-        # Run segmentation
-        labels = seg.fit_transform(prop_data, outliers)
-        labels = measure.label(labels, connectivity=2) # creates unique labels
+        # Fit watershed algorithm
+        seg.fit(prop_data)
+
+        # Find optimal merging parameter
+        optimal_thresh = seg.find_optimal_thresh(prop_data, outliers, plot_flag=True)
+
+        # Apply optimal merging threshold to watershed algorithm
+        labels = seg.transform(prop_data, outliers, optimal_thresh)
 
         # Plot classification
         mm.show_classification(labels, data)
@@ -145,14 +145,13 @@ def main(data_path=None, example_number=None):
         sobel_data = mm.show_boundaries(data)
 
         # Choose material property to segment
-        prop_data = sobel_data[:,:,4] # NOTE height
+        prop_data = sobel_data[:, :, 4]  # NOTE height
 
         # Initialize GMM segmentation
         seg = seg_water.SegmenterWatershed()
 
         # Run segmentation
         labels = seg.fit_transform(prop_data, outliers)
-        labels = measure.label(labels, connectivity=2) # creates unique labels
 
         # Plot classification
         mm.show_classification(labels, data)
@@ -183,8 +182,8 @@ def main(data_path=None, example_number=None):
 
     ## NOTE Not valid example numbers
     else:
-        print(f'Wrong example number inputted: {example_number}.')
+        print(f"Wrong example number inputted: {example_number}.")
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()
-

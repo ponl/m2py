@@ -17,6 +17,9 @@ LABEL_THRESH = 1000 # each label must have more than this number of pixels
 
 CMAP = pyplot.get_cmap('gist_ncar')
 
+ALPHA = 0.8
+NUM_BINS = 30
+
 ## Boundary Detection
 def sobel(data):
     """ Applies the Sobel operator to x
@@ -326,7 +329,7 @@ def show_classification(labels, data):
         for index, j in enumerate(grain_labels): # plots mask and distribution per class
             color_step = MAX_PIXEL - int((index + 1) * MAX_PIXEL / len(grain_labels))
             mask = np.ma.masked_where(labels!=j, color_step * np.ones(labels.shape))
-            m = ax_r.imshow(mask, alpha=0.8, cmap=CMAP, vmin=0, vmax=MAX_PIXEL)
+            m = ax_r.imshow(mask, alpha=ALPHA, cmap=CMAP, vmin=0, vmax=MAX_PIXEL)
         pyplot.colorbar(m, fraction=0.046, pad=0.04)
 
     pyplot.tight_layout()
@@ -357,7 +360,7 @@ def show_classification_distributions(labels, data):
         ax_r.set_title(PROPS[i])
         for index, j in enumerate(grain_labels):
             color_step = MAX_PIXEL - int((index + 1) * MAX_PIXEL / len(grain_labels))
-            ax_r.hist(data[:,:,i][labels == j], 30, alpha=0.8, density=True, color=CMAP(color_step))
+            ax_r.hist(data[:,:,i][labels == j], NUM_BINS, alpha=ALPHA, density=True, color=CMAP(color_step))
 
     pyplot.tight_layout()
     pyplot.show()
@@ -424,9 +427,9 @@ def show_distributions_together(labels, data):
         for index, j in enumerate(grain_labels): # plots mask and distribution per class
             color_step = MAX_PIXEL - int((index + 1) * MAX_PIXEL / len(grain_labels))
             mask = np.ma.masked_where(labels!=j, color_step * np.ones(labels.shape))
-            ax_l.imshow(mask, alpha=0.8, cmap=CMAP, aspect='auto', vmin=0, vmax=MAX_PIXEL)
+            ax_l.imshow(mask, alpha=ALPHA, cmap=CMAP, aspect='auto', vmin=0, vmax=MAX_PIXEL)
 
-            ax_r.hist(data[:,:,i][labels == j], 30, alpha=0.8, density=True, color=CMAP(color_step))
+            ax_r.hist(data[:,:,i][labels == j], NUM_BINS, alpha=ALPHA, density=True, color=CMAP(color_step))
 
     pyplot.tight_layout()
     pyplot.show()
@@ -457,7 +460,7 @@ def show_distributions_separately(labels, data):
             ax_r = pyplot.subplot(3,4,cnt)
             cnt += 1
             ax_r.set_title(PROPS[i])
-            ax_r.hist(data[:,:,i][labels == gl], 30, alpha=0.6, density=True, color=CMAP(color_step))
+            ax_r.hist(data[:,:,i][labels == gl], NUM_BINS, alpha=ALPHA, density=True, color=CMAP(color_step))
             ax_r.grid()
 
         pyplot.tight_layout()

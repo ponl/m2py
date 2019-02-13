@@ -1,13 +1,15 @@
 import logging
-
 from collections import Counter
 
 import numpy as np
+from skimage import measure
+from sklearn.decomposition import PCA
 from sklearn.mixture import GaussianMixture
 from sklearn.preprocessing import StandardScaler
-from sklearn.decomposition import PCA
+
 
 logger = logging.getLogger(__name__)
+
 
 class SegmenterGMM(object):
     def __init__(self, n_components=3, normalize=True, embedding_dim=None, padding=0, zscale=False):
@@ -37,7 +39,6 @@ class SegmenterGMM(object):
         self.gmm = None
         self.pca = None
         self.sst = None
-
 
     def fit(self, data, outliers=None):
         """
@@ -88,7 +89,6 @@ class SegmenterGMM(object):
 
         return self
 
-
     def transform(self, data, outliers=None):
         """
         Applies the learned Gaussian mixture model and
@@ -122,12 +122,11 @@ class SegmenterGMM(object):
 
         labels = self.gmm.predict(data)
         labels = np.reshape(labels, (h, w))
-        labels += 1 # all labels move up one
+        labels += 1  # all labels move up one
         if outliers is not None:
-            labels *= (1 - outliers) # outliers map to label 0
+            labels *= 1 - outliers  # outliers map to label 0
 
         return labels
-
 
     def fit_transform(self, data, outliers=None):
         """
@@ -149,7 +148,6 @@ class SegmenterGMM(object):
 
         return self.transform(data, outliers)
 
-
     @staticmethod
     def remove_outliers(data, outliers):
         if outliers is None:
@@ -158,14 +156,13 @@ class SegmenterGMM(object):
         n_outlier = len(outliers)
         return np.array([data[i] for i in range(n_outlier) if not outliers[i]])
 
-
     @staticmethod
     def get_windows(data, padding=3, flatten=True):
         h, w, c = data.shape
         n = 2 * padding + 1
-        wins = np.zeros((h * w, n**2, c))
+        wins = np.zeros((h * w, n ** 2, c))
         for d in range(c):
-            X = np.pad(data[:,:,d], padding, "constant")
+            X = np.pad(data[:, :, d], padding, "constant")
             idx = 0
             for i in range(padding, h + padding):
                 for j in range(padding, w + padding):
@@ -176,7 +173,7 @@ class SegmenterGMM(object):
 
         if flatten:
             l = wins.shape[1]
-            wins = np.reshape(wins, (-1, l * c)) # (pixels) x (properties + neighbors)
+            wins = np.reshape(wins, (-1, l * c))  # (pixels) x (properties + neighbors)
 
         return wins
 
@@ -185,3 +182,8 @@ class SegmenterGMM(object):
         m = np.max(np.abs(data), axis=0)
         return data / m
 
+    @staticmethod
+    def get_grains(labels):
+        """ Segments classes labels into grain labels """
+        new_labels = measure.label(labels, connectivity=2, background=0)
+        return new_labels
