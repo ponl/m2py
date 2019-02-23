@@ -58,7 +58,7 @@ def main(data_path=None, example_number=None):
         mm.show_distributions_together(labels, no_outliers_data)  # all classes plotted together
         mm.show_distributions_separately(labels, no_outliers_data)  # each class plotted per plot
 
-    ## NOTE Segmentation example with dimensionality reduction (PCA) across physical properties
+    ## NOTE Segmentation example with dimensionality reduction (PCA) across physical properties AND grain segmentation
     elif example_number == "2":
 
         # Initialize GMM segmentation
@@ -96,17 +96,25 @@ def main(data_path=None, example_number=None):
     ## NOTE Segmentation example with dimensionality reduction (PCA) across neighboring pixels and physical properties
     elif example_number == "3":
 
+        # Get outliers
+        outliers = mm.extract_outliers(data)
+
         # Initialize GMM segmentation # TODO need to optimize these parameters
-        seg = seg_gmm.SegmenterGMM(n_components=3, padding=3, embedding_dim=10, zscale=True)
+        seg = seg_gmm.SegmenterGMM(n_components=2, padding=3, embedding_dim=10, zscale=True)
 
         # Run segmentation
-        labels = seg.fit_transform(data)
+        labels = seg.fit_transform(data, outliers)
 
-        # Plot classification
-        mm.show_classification(labels, data)
+        # Plot classification without outliers
+        no_outliers_data = np.copy(data)
+        no_outliers_data[outliers == 1] = 0  # remove outliers from data
+        mm.show_classification(labels, no_outliers_data)
 
         # Plot classification distributions
-        mm.show_classification_distributions(labels, data)
+        mm.show_classification_distributions(labels, no_outliers_data)
+
+        # Plot classification distributions with masks
+        mm.show_distributions_together(labels, no_outliers_data)  # all classes plotted together
 
     ## NOTE Segmentation example using persistence watershed on height property of the material
     elif example_number == "4":
@@ -166,19 +174,37 @@ def main(data_path=None, example_number=None):
         outliers = mm.extract_outliers(data)
 
         # Initialize GMM segmentation
-        pre_seg = seg_gmm.SegmenterGMM(n_components=2, embedding_dim=3)
+        seg = seg_gmm.SegmenterGMM(n_components=2, embedding_dim=3)
 
         # Remove height property
         no_height_data = np.delete(data, 4, axis=2)
 
         # Run segmentation
-        pre_labels = pre_seg.fit_transform(no_height_data, outliers)
+        labels = seg.fit_transform(no_height_data, outliers)
 
         # Plot classification
-        mm.show_classification(pre_labels, data)
+        mm.show_classification(labels, data)
 
         # Plot classification distributions
-        mm.show_classification_distributions(pre_labels, data)
+        mm.show_classification_distributions(labels, data)
+
+    ## NOTE Segmentation example with dimensionality reduction (PCA) across physical properties (skinny version of example 2)
+    elif example_number == "7":
+
+        # Initialize GMM segmentation
+        seg = seg_gmm.SegmenterGMM(n_components=2, embedding_dim=3)
+
+        # Run segmentation
+        labels = seg.fit_transform(data)
+
+        # Plot classification
+        mm.show_classification(labels, data)
+
+        # Plot classification distributions
+        mm.show_classification_distributions(labels, data)
+
+        # Plot classification distributions with masks
+        mm.show_distributions_together(labels, data)  # all classes plotted together
 
     ## NOTE Not valid example numbers
     else:

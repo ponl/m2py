@@ -97,7 +97,7 @@ class SegmenterWatershed(object):
         return self.transform(data, outliers, pers_thresh)
 
     @staticmethod
-    def normalize_data(data):  # Maps to (0,1). This allows negative values to be grains.
+    def normalize_data(data):  # Maps from (-a,b) to (0,1). This allows negative values to be grains.
         return np.abs(data) / np.max(np.abs(data))
 
     @staticmethod
