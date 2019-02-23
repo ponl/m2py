@@ -12,30 +12,39 @@ from methods import config
 PROPS = config.data_properties
 HEIGHT_INDEX = config.height_index
 
+MAX_PIXEL = 255
+LABEL_THRESH = 1000 # each label must have more than this number of pixels
+
+CMAP = pyplot.get_cmap('gist_ncar')
+
+ALPHA = 0.8
+NUM_BINS = 30
+
 ## Boundary Detection
-def sobel(x):
+def sobel(data):
     """ Applies the Sobel operator to x
     Args:
-        x (np array): data
+        data (np array): data
     Returns:
         (np array): data after applying convolution
     """
     fr = np.array([[0, 1, 0, -1, 0], [1, 2, 0, -2, -1], [2, 4, 0, -4, 2], [ 1,  2,  0, -2,  1], [0,  1,  0, -1, 0]])
     fc = np.array([[0, 1, 2,  1, 0], [1, 2, 4,  2,  1], [0, 0, 0,  0, 0], [-1, -2, -4, -2, -1], [0, -1, -2, -1, 0]])
-    yr = signal.convolve2d(x, fr, boundary="symm", mode="same")
-    yc = signal.convolve2d(x, fc, boundary="symm", mode="same")
+    yr = signal.convolve2d(data, fr, boundary="symm", mode="same")
+    yc = signal.convolve2d(data, fc, boundary="symm", mode="same")
 
     return np.sqrt(yr**2 + yc**2)
 
-def show_boundaries(X):
+def show_boundaries(data):
     """ Plots the data properties and their boundaries
     Args:
-        X (np array): data
+        data (np array): data
     """
-    fig = pyplot.figure(figsize=(16, 30), dpi= 80, facecolor='w', edgecolor='k')
+    fig = pyplot.figure(figsize=(16, 30), dpi=80, facecolor='w', edgecolor='k')
+    sobel_data = np.zeros(data.shape)
     cnt = 1
-    for i in range(X.shape[2]):
-        x = X[:,:,i]
+    for i in range(data.shape[2]):
+        x = data[:,:,i]
         pyplot.subplot(3,4,cnt) # TODO how to ensure break down of plots?
         pyplot.title(PROPS[i])
         m = pyplot.imshow(x)
@@ -44,9 +53,12 @@ def show_boundaries(X):
         cnt += 1
 
         # Apply Sobel operator
+        x_sobel = sobel(x)
+        sobel_data[:,:,i] = x_sobel
+
         pyplot.subplot(3,4,cnt)
         pyplot.title(f"{PROPS[i]} Gradient")
-        m = pyplot.imshow(sobel(x))
+        m = pyplot.imshow(x_sobel)
         pyplot.colorbar(m, fraction=0.046, pad=0.04)
 
         cnt += 1
@@ -54,17 +66,20 @@ def show_boundaries(X):
     pyplot.tight_layout()
     pyplot.show()
 
+    return sobel_data
+
 ## Properties Distributions
-def show_property_distributions(X):
+def show_property_distributions(data, outliers):
     """ Plots the pdfs of the data properties
     Args:
-        X (np array): data
+        data (np array): data
+        outliers (np array): outliers
     """
-    O = extract_outliers(X)
-    fig = pyplot.figure(figsize=(15, 10), dpi= 80, facecolor='w', edgecolor='k')
+    fig = pyplot.figure(figsize=(15, 10), dpi=80, facecolor='w', edgecolor='k')
 
-    for j in range(X.shape[2]):
-        x = [X[n,m,j] for n in range(X.shape[0]) for m in range(X.shape[1]) if not O[n,m]]
+    h, w, c = data.shape
+    for j in range(c):
+        x = [data[n,m,j] for n in range(h) for m in range(w) if not outliers[n,m]]
         pyplot.subplot(2, 3, j+1) # TODO how to ensure break down of plots?
         pyplot.title(PROPS[j])
         sb.distplot(x) # TODO warning gets thrown out when using this
@@ -73,16 +88,16 @@ def show_property_distributions(X):
     pyplot.show()
 
 ## Outlier Detection
-def extract_outliers(X, height_index=HEIGHT_INDEX, threshold=2.5):
+def extract_outliers(data, height_index=HEIGHT_INDEX, threshold=2.5):
     """ Finds outliers from data
     Args:
-        X (np array): data
+        data (np array): data
         height_index (int): index of height property
         threshold: (float): z-score threshold
     Returns:
         (np array): boolean matrix denoting outliers
     """
-    x = X[:,:,height_index]
+    x = data[:,:,height_index]
 
     # Smooth data
     flt = np.array([[0.5, 0.5, 0.5], [0.5, 1, 0.5], [0.5, 0.5, 0.5]])
@@ -96,29 +111,32 @@ def extract_outliers(X, height_index=HEIGHT_INDEX, threshold=2.5):
     # Threshold by z-score
     return z > threshold
 
-def show_outliers(X, height_index=HEIGHT_INDEX):
+def show_outliers(data, outliers, height_index=HEIGHT_INDEX):
     """ Plots data properties and outliers
     Args:
-        X (np array): data
+        data (np array): data
+        outliers (np array): outliers
         height_index (int): index of height property
     """
-    fig = pyplot.figure(figsize=(15,5))
+    fig = pyplot.figure(figsize=(18,5))
 
     pyplot.subplot(1,3,1)
-    m = pyplot.imshow(X[:,:,height_index])
+    m = pyplot.imshow(data[:,:,height_index], aspect="auto")
     pyplot.title('Height')
     pyplot.colorbar(m, fraction=0.046, pad=0.04)
 
     pyplot.subplot(1,3,2)
-    pyplot.imshow(extract_outliers(X))
-    pyplot.title('Height')
+    pyplot.imshow(outliers, aspect='auto')
+    pyplot.title('Height Outliers')
 
-    outliers = extract_outliers(X)
-    X[outliers == 1] = 0
+    no_outliers_data = np.copy(data)
+    no_outliers_data[outliers == 1] = 0
     pyplot.subplot(1,3,3)
-    m = pyplot.imshow(X[:,:,height_index])
+    m = pyplot.imshow(no_outliers_data[:,:,height_index], aspect='auto')
     pyplot.title('Height')
     pyplot.colorbar(m, fraction=0.046, pad=0.04)
+
+    pyplot.tight_layout()
     pyplot.show()
 
 ## Features Correlations
@@ -172,13 +190,13 @@ def get_correlations(path):
     N = get_sample_count(path)
     cors = []
     for i in range(N):
-        X = get_data(i, path)
-        d = X.shape[2]
+        data = get_data(i, path)
+        c = data.shape[2]
 
-        C = np.zeros((d,d)) # correlation matrix of properties per file
-        for j in range(d):
-            for k in range(j, d):
-                C[j,k] = C[k,j] = np.corrcoef(X[:,:,j].flatten(), X[:,:,k].flatten())[0][1]
+        C = np.zeros((c,c)) # correlation matrix of properties per file
+        for j in range(c):
+            for k in range(j, c):
+                C[j,k] = C[k,j] = np.corrcoef(data[:,:,j].flatten(), data[:,:,k].flatten())[0][1]
 
         cors.append(C)
 
@@ -211,7 +229,7 @@ def show_correlations(num_props, path):
     for i in range(num_props):
         for j in range(num_props):
             pyplot.subplot(num_props, num_props, cnt)
-            pyplot.title(f"{PROPS[i]} -- {PROPS[j]}")
+            pyplot.title(f"{PROPS[i]} -- {PROPS[j]}", fontsize=11)
 
             if i == j: # skip auto-correlation
                 pyplot.xlabel("Correlation")
@@ -221,7 +239,7 @@ def show_correlations(num_props, path):
                 continue
 
             P = get_correlation_values(cors, i, j)
-            V = [np.round(p, 1) for p in P if not np.isnan(p)]
+            V = [p for p in P if not np.isnan(p)]
 
             sb.distplot(V) # TODO warning gets thrown out when using this
             pyplot.xlabel("Correlation")
@@ -233,110 +251,218 @@ def show_correlations(num_props, path):
     pyplot.show()
 
 ## Mixture of Gaussians Model
-def segment(X, outliers, num_components=3, normal=True):
+def segment(data, outliers, num_components=2):
     """ Classifies each pixel into components using a Gaussian mixture model
     Args:
-        X (np.array): data
+        data (np.array): data
         outliers (np.array): outliers mask
         num_components (int): number of classes
         normal (bool): flag to apply normalization of data
     Returns:
         (np.array): matrix of classification per pixel
     """
-    n, m, d = X.shape
+    h, w, c = data.shape
+    n = h * w
 
-    if normal: # maps domain to [-1,1]
-        max_vector = [np.max(np.abs(X[:,:,i])) for i in range(d)]
+    # Normalize full data for prediction
+    data = data.reshape(n, c)
+    m = np.max(np.abs(data), axis=0)
+    normal_data = data / m
 
-        normal_X = np.zeros(X.shape)
-        for i in range(d):
-            normal_X[:,:,i] = X[:,:,i] / max_vector[i]
-    else:
-        normal_X = X
-
-    V = [normal_X[i,j,:] for i in range(m) for j in range(n) if not outliers[i,j]]
-    V_full = [normal_X[i,j,:] for i in range(n) for j in range(m)]
+    # Normalize data without outliers for fitting
+    outliers = outliers.flatten()
+    no_outliers_data = [data[i] for i in range(n) if not outliers[i]]
+    m = np.max(np.abs(no_outliers_data), axis=0)
+    normal_no_outliers_data = no_outliers_data / m
 
     gmm = GaussianMixture(n_components=num_components, covariance_type='full')
-    gmm.fit(V)
+    gmm.fit(normal_no_outliers_data)
 
-    l = gmm.predict(V_full) # provides a gmm component to all data points
-    return l.reshape(n,m)
+    l = gmm.predict(normal_data) # provides a gmm component to all data points
+    return l.reshape(h, w)
 
-def apply_segmentation(X, height_flag=False):
+def apply_segmentation(data, outliers):
     """ Gets classification of pixels after segmentation
     Args:
-        X (np.array): data
-        height_flag (bool): flag to keep height property
+        data (np.array): data
+        outliers (np.array): outliers
     Returns:
-        L (np.array): matrix of classification per pixel
-        reduced_X (np.array): data after applying height flag
+        labels (np.array): matrix of classification per pixel
     """
-    O = extract_outliers(X)
+    labels = segment(data, outliers)
 
-    # NOTE keep height data for 2-components data set due to their direct correlation
-    if height_flag:
-        reduced_X = X
-    else: # remove it for other data types to avoid hurting the classification
-        reduced_X = np.delete(X, HEIGHT_INDEX, axis=2)
+    labels += 1 # all labels move up one
+    labels *= (1 - outliers) # outliers map to label 0
 
-    L = segment(reduced_X, O, normal=True)
-    reduced_X[O==1] = 0 # remove outliers from data
+    return labels
 
-    L += 1 # all labels move up one
-    L *= (1 - O) # outliers map to label 0
+def get_unique_labels(labels):
+    """ Gets unique labels """
+    unique_labels = list(np.unique(labels))
+    if 0 in unique_labels: # skips outliers AND borders in watershed segmentation
+        unique_labels.remove(0)
 
-    return L, reduced_X
+    return unique_labels
 
-def show_classification(L, reduced_X):
+def show_classification(labels, data):
     """ Shows classification of pixels after segmentation
     Args:
-        L (np.array): matrix of classification per pixel
-        reduced_X (np.array): data after applying height flag
+        labels (np.array): matrix of classification per pixel
+        data (np.array): data
     """
-    d = reduced_X.shape[2]
-    fig = pyplot.figure(figsize=(16, 30), dpi= 80, facecolor='w', edgecolor='k')
-    cnt = 1
-    for i in range(d):
-        pyplot.subplot(3,4,cnt)
-        pyplot.title(PROPS[i])
-        m = pyplot.imshow(reduced_X[:,:,i])
-        pyplot.colorbar(m, fraction=0.046, pad=0.04)
-        cnt += 1
+    unique_labels = get_unique_labels(labels)
+    grain_labels = [l for l in unique_labels if np.sum(labels==l) > LABEL_THRESH]
 
-        pyplot.subplot(3,4,cnt)
-        pyplot.title("Segmentation")
-        m = pyplot.imshow(L)
-        pyplot.colorbar(m, fraction=0.046, pad=0.04)
+    c = data.shape[2]
+    fig = pyplot.figure(figsize=(16, 30), dpi=80, facecolor='w', edgecolor='k')
+    cnt = 1
+    for i in range(c):
+        ax_l = pyplot.subplot(3,4,cnt)
         cnt += 1
+        ax_l.set_title(PROPS[i])
+        m = ax_l.imshow(data[:,:,i])
+        pyplot.colorbar(m, fraction=0.046, pad=0.04)
+
+        ax_r = pyplot.subplot(3,4,cnt)
+        cnt += 1
+        ax_r.set_title("Segmentation")
+        for index, j in enumerate(grain_labels): # plots mask and distribution per class
+            color_step = MAX_PIXEL - int((index + 1) * MAX_PIXEL / len(grain_labels))
+            mask = np.ma.masked_where(labels!=j, color_step * np.ones(labels.shape))
+            m = ax_r.imshow(mask, alpha=ALPHA, cmap=CMAP, vmin=0, vmax=MAX_PIXEL)
+        pyplot.colorbar(m, fraction=0.046, pad=0.04)
 
     pyplot.tight_layout()
     pyplot.show()
 
-def show_classification_distributions(L, X):
+def show_classification_distributions(labels, data):
     """ Shows distributions of classes after segmentation
     Args:
-        L (np.array): matrix of classification per pixel
-        X (np.array): data
+        labels (np.array): matrix of classification per pixel
+        data (np.array): data
     """
-    d = X.shape[2]
-    fig = pyplot.figure(figsize=(20, 20), dpi= 80, facecolor='w', edgecolor='k')
+    unique_labels = get_unique_labels(labels)
+    grain_labels = [l for l in unique_labels if np.sum(labels==l) > LABEL_THRESH]
+
+    c = data.shape[2]
+    fig = pyplot.figure(figsize=(20, 20), dpi=80, facecolor='w', edgecolor='k')
     cnt = 1
-    for i in range(d):
-        pyplot.subplot(3,4,cnt)
-        pyplot.title(PROPS[i])
-        m = pyplot.imshow(X[:,:,i], aspect='auto')
+    for i in range(c):
+        ax_l = pyplot.subplot(3,4,cnt)
+        cnt += 1
+        ax_l.set_title(PROPS[i])
+        m = ax_l.imshow(data[:,:,i], aspect='auto')
         pyplot.colorbar(m, fraction=0.046, pad=0.04)
-        cnt += 1
 
-        pyplot.subplot(3,4,cnt)
-        pyplot.title(PROPS[i])
-        for j in range(1, np.max(L) + 1): # skip outliers
-            pyplot.hist(X[:,:,i][L == j], 100, alpha=0.3, density=True)
-
+        ax_r = pyplot.subplot(3,4,cnt)
         cnt += 1
-        pyplot.grid()
+        ax_r.grid()
+        ax_r.set_title(PROPS[i])
+        for index, j in enumerate(grain_labels):
+            color_step = MAX_PIXEL - int((index + 1) * MAX_PIXEL / len(grain_labels))
+            ax_r.hist(data[:,:,i][labels == j], NUM_BINS, alpha=ALPHA, density=True, color=CMAP(color_step))
 
     pyplot.tight_layout()
     pyplot.show()
+
+def show_grain_area_distribution(labels):
+    """ Computes a histogram of the number of pixels per label
+    Args:
+        labels (np.array): matrix of classification per pixel
+    """
+    unique_labels = get_unique_labels(labels)
+    grain_areas = [np.sum(labels==l) for l in unique_labels]
+    normal_grain_areas = grain_areas / np.sum(grain_areas) * 100
+
+    pyplot.figure(figsize=(18,5), dpi=80, facecolor='w', edgecolor='k')
+    pyplot.subplot(1,3,1)
+    pyplot.plot(unique_labels, grain_areas, 'ro')
+    pyplot.plot(unique_labels, grain_areas, 'b')
+    pyplot.xlabel('Label numbering')
+    pyplot.ylabel('Grain area')
+    pyplot.title('Grain Area (number of pixels)')
+    pyplot.grid()
+
+    pyplot.subplot(1,3,2)
+    pyplot.plot(unique_labels, np.log10(grain_areas), 'ro')
+    pyplot.plot(unique_labels, np.log10(grain_areas), 'b')
+    pyplot.xlabel('Label numbering')
+    pyplot.ylabel('Log grain area')
+    pyplot.title('Log Grain Area (number of pixels)')
+    pyplot.grid()
+
+    pyplot.subplot(1,3,3)
+    pyplot.plot(unique_labels, normal_grain_areas, 'ro')
+    pyplot.plot(unique_labels, normal_grain_areas, 'b')
+    pyplot.xlabel('Label numbering')
+    pyplot.ylabel('Percentage in image')
+    pyplot.title('Grain Percentage in Image')
+    pyplot.grid()
+
+    pyplot.show()
+
+
+def show_distributions_together(labels, data):
+    """ Shows distributions of classes after segmentation
+    Args:
+        labels (np.array): matrix of classification per pixel
+        data (np.array): data
+    """
+    unique_labels = get_unique_labels(labels)
+    grain_labels = [l for l in unique_labels if np.sum(labels==l) > LABEL_THRESH]
+
+    c = data.shape[2]
+    fig = pyplot.figure(figsize=(20, 20), dpi=80, facecolor='w', edgecolor='k')
+    cnt = 1
+    for i in range(c):
+        ax_l = pyplot.subplot(3,4,cnt)
+        cnt += 1
+        ax_l.set_title(PROPS[i])
+
+        ax_r = pyplot.subplot(3,4,cnt)
+        cnt += 1
+        ax_r.grid()
+        ax_r.set_title(PROPS[i])
+
+        for index, j in enumerate(grain_labels): # plots mask and distribution per class
+            color_step = MAX_PIXEL - int((index + 1) * MAX_PIXEL / len(grain_labels))
+            mask = np.ma.masked_where(labels!=j, color_step * np.ones(labels.shape))
+            ax_l.imshow(mask, alpha=ALPHA, cmap=CMAP, aspect='auto', vmin=0, vmax=MAX_PIXEL)
+
+            ax_r.hist(data[:,:,i][labels == j], NUM_BINS, alpha=ALPHA, density=True, color=CMAP(color_step))
+
+    pyplot.tight_layout()
+    pyplot.show()
+
+def show_distributions_separately(labels, data):
+    """ Shows distributions of each class separately
+    Args:
+        labels (np.array): matrix of classification per pixel
+        data (np.array): data
+    """
+    unique_labels = get_unique_labels(labels)
+    grain_labels = [l for l in unique_labels if np.sum(labels==l) > LABEL_THRESH]
+
+    for index, gl in enumerate(grain_labels):
+        color_step = MAX_PIXEL - int((index + 1) * MAX_PIXEL / len(grain_labels))
+        c = data.shape[2]
+        fig = pyplot.figure(figsize=(20, 20), dpi=80, facecolor='w', edgecolor='k')
+        cnt = 1
+        for i in range(c):
+            ax_l = pyplot.subplot(3,4,cnt)
+            cnt += 1
+            ax_l.set_title(PROPS[i])
+            m = ax_l.imshow(data[:,:,i], aspect='auto')
+            mask = np.ma.masked_where(labels==gl, np.ones(labels.shape))
+            ax_l.imshow(mask, alpha=1, cmap='bone', aspect='auto', vmin=0, vmax=1)
+            pyplot.colorbar(m, fraction=0.046, pad=0.04)
+
+            ax_r = pyplot.subplot(3,4,cnt)
+            cnt += 1
+            ax_r.set_title(PROPS[i])
+            ax_r.hist(data[:,:,i][labels == gl], NUM_BINS, alpha=ALPHA, density=True, color=CMAP(color_step))
+            ax_r.grid()
+
+        pyplot.tight_layout()
+        pyplot.show()
 
