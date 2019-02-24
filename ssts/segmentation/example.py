@@ -17,6 +17,7 @@ def main(data_path=None, example_number=None):
 
     example_number = args.example_number
     data_dir = args.data_path
+    data_type = data_dir.split("/")[-3]
     data = np.load(data_dir)
 
     ## NOTE Segmentation example without using outliers
@@ -87,7 +88,7 @@ def main(data_path=None, example_number=None):
         mm.show_classification(post_labels, data)
 
         # Plot area distribution of grains
-        mm.show_grain_area_distribution(post_labels)
+        mm.show_grain_area_distribution(post_labels, data_type)
 
         # Plot distributions of segmented grains
         mm.show_distributions_together(post_labels, data)  # all grains plotted together

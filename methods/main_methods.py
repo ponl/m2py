@@ -11,9 +11,10 @@ from methods import config
 
 PROPS = config.data_properties
 HEIGHT_INDEX = config.height_index
+SAMPLE_SIZE = {'backgrounded': 1, '2componentfilms': 0.5, 'nanowires': 5} # nano-meters
 
 MAX_PIXEL = 255
-LABEL_THRESH = 1000 # each label must have more than this number of pixels
+LABEL_THRESH = 250 # each label must have more than this number of pixels
 
 CMAP = pyplot.get_cmap('gist_ncar')
 
@@ -365,38 +366,44 @@ def show_classification_distributions(labels, data):
     pyplot.tight_layout()
     pyplot.show()
 
-def show_grain_area_distribution(labels):
+def show_grain_area_distribution(labels, data_type):
     """ Computes a histogram of the number of pixels per label
     Args:
         labels (np.array): matrix of classification per pixel
+        data_type (str): type of data such as 2component or backgrounded
     """
+    sample_area = SAMPLE_SIZE[data_type] ** 2
+
     unique_labels = get_unique_labels(labels)
     grain_areas = [np.sum(labels==l) for l in unique_labels]
-    normal_grain_areas = grain_areas / np.sum(grain_areas) * 100
+
+    sig_areas = sorted([a for a in grain_areas if a > LABEL_THRESH], reverse=True)
+    percent_sig_areas = sig_areas / np.sum(grain_areas) * 100
+    physical_sig_areas = percent_sig_areas / 100 * sample_area
 
     pyplot.figure(figsize=(18,5), dpi=80, facecolor='w', edgecolor='k')
     pyplot.subplot(1,3,1)
-    pyplot.plot(unique_labels, grain_areas, 'ro')
-    pyplot.plot(unique_labels, grain_areas, 'b')
-    pyplot.xlabel('Label numbering')
-    pyplot.ylabel('Grain area')
-    pyplot.title('Grain Area (number of pixels)')
+    pyplot.plot(np.log10(sig_areas), 'ro')
+    pyplot.plot(np.log10(sig_areas), 'b')
+    pyplot.xlabel('Grain')
+    pyplot.ylabel('Log number of pixles per grain')
+    pyplot.title('Log Number of Pixels per Grain')
     pyplot.grid()
 
     pyplot.subplot(1,3,2)
-    pyplot.plot(unique_labels, np.log10(grain_areas), 'ro')
-    pyplot.plot(unique_labels, np.log10(grain_areas), 'b')
-    pyplot.xlabel('Label numbering')
-    pyplot.ylabel('Log grain area')
-    pyplot.title('Log Grain Area (number of pixels)')
+    pyplot.plot(percent_sig_areas, 'ro')
+    pyplot.plot(percent_sig_areas, 'b')
+    pyplot.xlabel('Grain')
+    pyplot.ylabel('Grain percentage (%)')
+    pyplot.title('Grain Percentage (%)')
     pyplot.grid()
 
-    pyplot.subplot(1,3,3)
-    pyplot.plot(unique_labels, normal_grain_areas, 'ro')
-    pyplot.plot(unique_labels, normal_grain_areas, 'b')
-    pyplot.xlabel('Label numbering')
-    pyplot.ylabel('Percentage in image')
-    pyplot.title('Grain Percentage in Image')
+    pyplot.subplot(1,3,3) # actual size TODO
+    pyplot.plot(physical_sig_areas, 'ro')
+    pyplot.plot(physical_sig_areas, 'b')
+    pyplot.xlabel('Grain')
+    pyplot.ylabel('Grain area (nm)')
+    pyplot.title('Grain Area (nm)')
     pyplot.grid()
 
     pyplot.show()
