@@ -129,14 +129,8 @@ def main(data_path=None, example_number=None):
         # Choose material property to segment
         prop_data = data[:, :, 4]  # NOTE height
 
-        # Fit watershed algorithm
-        seg.fit(prop_data)
-
-        # Find optimal merging parameter
-        optimal_thresh = seg.find_optimal_thresh(prop_data, outliers, plot_flag=True)
-
         # Apply optimal merging threshold to watershed algorithm
-        labels = seg.transform(prop_data, outliers, optimal_thresh)
+        labels = seg.fit_transform(prop_data, outliers, 0.4)
 
         # Plot classification
         mm.show_classification(labels, data)
