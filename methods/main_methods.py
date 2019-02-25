@@ -13,7 +13,7 @@ PROPS = config.data_properties
 HEIGHT_INDEX = config.height_index
 SAMPLE_SIZE = {'backgrounded': 1, '2componentfilms': 0.5, 'nanowires': 5} # nano-meters
 
-LABEL_THRESH = 250 # each label must have more than this number of pixels
+LABEL_THRESH = 1000 # each label must have more than this number of pixels
 
 ALPHA = 0.8
 NUM_BINS = 30
@@ -300,6 +300,7 @@ def get_unique_labels(labels):
     if 0 in unique_labels: # skips outliers AND borders in watershed segmentation
         unique_labels.remove(0)
 
+    unique_labels = sorted(unique_labels, key=lambda k: np.sum(labels==k))
     return unique_labels
 
 def show_classification(labels, data):
