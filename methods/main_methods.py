@@ -4,7 +4,7 @@ from collections import Counter
 import numpy as np
 import seaborn as sb
 from scipy import signal
-from matplotlib import pyplot
+from matplotlib import pyplot, colors, cm
 from sklearn.mixture import GaussianMixture
 
 from methods import config
@@ -13,10 +13,7 @@ PROPS = config.data_properties
 HEIGHT_INDEX = config.height_index
 SAMPLE_SIZE = {'backgrounded': 1, '2componentfilms': 0.5, 'nanowires': 5} # nano-meters
 
-MAX_PIXEL = 255
 LABEL_THRESH = 250 # each label must have more than this number of pixels
-
-CMAP = pyplot.get_cmap('gist_ncar')
 
 ALPHA = 0.8
 NUM_BINS = 30
@@ -313,10 +310,12 @@ def show_classification(labels, data):
     """
     unique_labels = get_unique_labels(labels)
     grain_labels = [l for l in unique_labels if np.sum(labels==l) > LABEL_THRESH]
+    num_labels = len(grain_labels)
 
     c = data.shape[2]
     fig = pyplot.figure(figsize=(16, 30), dpi=80, facecolor='w', edgecolor='k')
     cnt = 1
+    cmap = pyplot.get_cmap('jet', num_labels)
     for i in range(c):
         ax_l = pyplot.subplot(3,4,cnt)
         cnt += 1
@@ -328,10 +327,11 @@ def show_classification(labels, data):
         cnt += 1
         ax_r.set_title("Segmentation")
         for index, j in enumerate(grain_labels): # plots mask and distribution per class
-            color_step = MAX_PIXEL - int((index + 1) * MAX_PIXEL / len(grain_labels))
+            color_step = num_labels - (index + 1)
             mask = np.ma.masked_where(labels!=j, color_step * np.ones(labels.shape))
-            m = ax_r.imshow(mask, alpha=ALPHA, cmap=CMAP, vmin=0, vmax=MAX_PIXEL)
-        pyplot.colorbar(m, fraction=0.046, pad=0.04)
+            ax_r.imshow(mask, alpha=ALPHA, cmap=cmap, vmin=0, vmax=cmap.N)
+
+        colorbar_index(ncolors=num_labels, cmap=cmap)
 
     pyplot.tight_layout()
     pyplot.show()
@@ -344,10 +344,12 @@ def show_classification_distributions(labels, data):
     """
     unique_labels = get_unique_labels(labels)
     grain_labels = [l for l in unique_labels if np.sum(labels==l) > LABEL_THRESH]
+    num_labels = len(grain_labels)
 
     c = data.shape[2]
     fig = pyplot.figure(figsize=(20, 20), dpi=80, facecolor='w', edgecolor='k')
     cnt = 1
+    cmap = pyplot.get_cmap('jet', num_labels)
     for i in range(c):
         ax_l = pyplot.subplot(3,4,cnt)
         cnt += 1
@@ -360,8 +362,8 @@ def show_classification_distributions(labels, data):
         ax_r.grid()
         ax_r.set_title(PROPS[i])
         for index, j in enumerate(grain_labels):
-            color_step = MAX_PIXEL - int((index + 1) * MAX_PIXEL / len(grain_labels))
-            ax_r.hist(data[:,:,i][labels == j], NUM_BINS, alpha=ALPHA, density=True, color=CMAP(color_step))
+            color_step = num_labels - (index + 1)
+            ax_r.hist(data[:,:,i][labels == j], NUM_BINS, alpha=ALPHA, density=True, color=cmap(color_step))
 
     pyplot.tight_layout()
     pyplot.show()
@@ -398,7 +400,7 @@ def show_grain_area_distribution(labels, data_type):
     pyplot.title('Grain Percentage (%)')
     pyplot.grid()
 
-    pyplot.subplot(1,3,3) # actual size TODO
+    pyplot.subplot(1,3,3)
     pyplot.plot(physical_sig_areas, 'ro')
     pyplot.plot(physical_sig_areas, 'b')
     pyplot.xlabel('Grain')
@@ -408,7 +410,6 @@ def show_grain_area_distribution(labels, data_type):
 
     pyplot.show()
 
-
 def show_distributions_together(labels, data):
     """ Shows distributions of classes after segmentation
     Args:
@@ -417,10 +418,12 @@ def show_distributions_together(labels, data):
     """
     unique_labels = get_unique_labels(labels)
     grain_labels = [l for l in unique_labels if np.sum(labels==l) > LABEL_THRESH]
+    num_labels = len(grain_labels)
 
     c = data.shape[2]
     fig = pyplot.figure(figsize=(20, 20), dpi=80, facecolor='w', edgecolor='k')
     cnt = 1
+    cmap = pyplot.get_cmap('jet', num_labels)
     for i in range(c):
         ax_l = pyplot.subplot(3,4,cnt)
         cnt += 1
@@ -432,11 +435,11 @@ def show_distributions_together(labels, data):
         ax_r.set_title(PROPS[i])
 
         for index, j in enumerate(grain_labels): # plots mask and distribution per class
-            color_step = MAX_PIXEL - int((index + 1) * MAX_PIXEL / len(grain_labels))
+            color_step = num_labels - (index + 1)
             mask = np.ma.masked_where(labels!=j, color_step * np.ones(labels.shape))
-            ax_l.imshow(mask, alpha=ALPHA, cmap=CMAP, aspect='auto', vmin=0, vmax=MAX_PIXEL)
+            ax_l.imshow(mask, alpha=ALPHA, cmap=cmap, aspect='auto', vmin=0, vmax=num_labels)
 
-            ax_r.hist(data[:,:,i][labels == j], NUM_BINS, alpha=ALPHA, density=True, color=CMAP(color_step))
+            ax_r.hist(data[:,:,i][labels == j], NUM_BINS, alpha=ALPHA, density=True, color=cmap(color_step))
 
     pyplot.tight_layout()
     pyplot.show()
@@ -449,9 +452,11 @@ def show_distributions_separately(labels, data):
     """
     unique_labels = get_unique_labels(labels)
     grain_labels = [l for l in unique_labels if np.sum(labels==l) > LABEL_THRESH]
+    num_labels = len(grain_labels)
 
+    cmap = pyplot.get_cmap('jet', num_labels)
     for index, gl in enumerate(grain_labels):
-        color_step = MAX_PIXEL - int((index + 1) * MAX_PIXEL / len(grain_labels))
+        color_step = num_labels - (index + 1)
         c = data.shape[2]
         fig = pyplot.figure(figsize=(20, 20), dpi=80, facecolor='w', edgecolor='k')
         cnt = 1
@@ -467,9 +472,40 @@ def show_distributions_separately(labels, data):
             ax_r = pyplot.subplot(3,4,cnt)
             cnt += 1
             ax_r.set_title(PROPS[i])
-            ax_r.hist(data[:,:,i][labels == gl], NUM_BINS, alpha=ALPHA, density=True, color=CMAP(color_step))
+            ax_r.hist(data[:,:,i][labels == gl], NUM_BINS, alpha=ALPHA, density=True, color=cmap(color_step))
             ax_r.grid()
 
         pyplot.tight_layout()
         pyplot.show()
+
+# NOTE Auxilliary methods for creating discrete colorbar
+def colorbar_index(ncolors, cmap):
+    """ Adds discrete colorbar to plot.
+    Args:
+        ncolors: number of colors.
+        cmap: colormap instance
+    """
+    cmap = cmap_discretize(cmap, ncolors)
+    mappable = cm.ScalarMappable(cmap=cmap)
+    mappable.set_array([])
+    mappable.set_clim(-0.5, ncolors+0.5)
+    colorbar = pyplot.colorbar(mappable, fraction=0.046, pad=0.04)
+    colorbar.set_ticks(np.linspace(0, ncolors, ncolors))
+    colorbar.set_ticklabels(range(ncolors))
+
+def cmap_discretize(cmap, N):
+    """Return a discrete colormap from the continuous colormap cmap.
+    Args:
+        cmap: colormap instance.
+        N: number of colors.
+    """
+    colors_i = np.concatenate((np.linspace(0, 1., N), (0.,0.,0.,0.)))
+    colors_rgba = cmap(colors_i)
+    indices = np.linspace(0, 1., N+1)
+    cdict = {}
+    for ki, key in enumerate(('red','green','blue')):
+        cdict[key] = [(indices[i], colors_rgba[i-1, ki], colors_rgba[i, ki]) for i in range(N+1)]
+
+    return colors.LinearSegmentedColormap(cmap.name + "_%d"%N, cdict)
+
 
