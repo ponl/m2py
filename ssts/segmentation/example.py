@@ -138,32 +138,8 @@ def main(data_path=None, example_number=None):
         # Plot classification distributions
         mm.show_classification_distributions(labels, data)
 
-    ## NOTE Segmentation example using persistence watershed on the output of the sobel operator
-    elif example_number == "5":
-
-        # Get outliers
-        outliers = mm.extract_outliers(data)
-
-        # Show boundaries after applying Sobel operator
-        sobel_data = mm.show_boundaries(data)
-
-        # Choose material property to segment
-        prop_data = sobel_data[:, :, 4]  # NOTE height
-
-        # Initialize GMM segmentation
-        seg = seg_water.SegmenterWatershed()
-
-        # Run segmentation
-        labels = seg.fit_transform(prop_data, outliers)
-
-        # Plot classification
-        mm.show_classification(labels, data)
-
-        # Plot classification distributions
-        mm.show_classification_distributions(labels, data)
-
     ## NOTE Segmentation example removing height property after outlier removal
-    elif example_number == "6":
+    elif example_number == "5":
 
         # Get outliers
         outliers = mm.extract_outliers(data)
@@ -184,7 +160,7 @@ def main(data_path=None, example_number=None):
         mm.show_classification_distributions(labels, data)
 
     ## NOTE Segmentation example with dimensionality reduction (PCA) across physical properties (skinny version of example 2)
-    elif example_number == "7":
+    elif example_number == "6":
 
         # Initialize GMM segmentation
         seg = seg_gmm.SegmenterGMM(n_components=2, embedding_dim=3)

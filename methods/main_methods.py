@@ -18,54 +18,6 @@ LABEL_THRESH = 1000 # each label must have more than this number of pixels
 ALPHA = 0.8
 NUM_BINS = 30
 
-## Boundary Detection
-def sobel(data):
-    """ Applies the Sobel operator to x
-    Args:
-        data (np array): data
-    Returns:
-        (np array): data after applying convolution
-    """
-    fr = np.array([[0, 1, 0, -1, 0], [1, 2, 0, -2, -1], [2, 4, 0, -4, 2], [ 1,  2,  0, -2,  1], [0,  1,  0, -1, 0]])
-    fc = np.array([[0, 1, 2,  1, 0], [1, 2, 4,  2,  1], [0, 0, 0,  0, 0], [-1, -2, -4, -2, -1], [0, -1, -2, -1, 0]])
-    yr = signal.convolve2d(data, fr, boundary="symm", mode="same")
-    yc = signal.convolve2d(data, fc, boundary="symm", mode="same")
-
-    return np.sqrt(yr**2 + yc**2)
-
-def show_boundaries(data):
-    """ Plots the data properties and their boundaries
-    Args:
-        data (np array): data
-    """
-    fig = pyplot.figure(figsize=(16, 30), dpi=80, facecolor='w', edgecolor='k')
-    sobel_data = np.zeros(data.shape)
-    cnt = 1
-    for i in range(data.shape[2]):
-        x = data[:,:,i]
-        pyplot.subplot(3,4,cnt) # TODO how to ensure break down of plots?
-        pyplot.title(PROPS[i])
-        m = pyplot.imshow(x)
-        pyplot.colorbar(m, fraction=0.046, pad=0.04)
-
-        cnt += 1
-
-        # Apply Sobel operator
-        x_sobel = sobel(x)
-        sobel_data[:,:,i] = x_sobel
-
-        pyplot.subplot(3,4,cnt)
-        pyplot.title(f"{PROPS[i]} Gradient")
-        m = pyplot.imshow(x_sobel)
-        pyplot.colorbar(m, fraction=0.046, pad=0.04)
-
-        cnt += 1
-
-    pyplot.tight_layout()
-    pyplot.show()
-
-    return sobel_data
-
 ## Properties Distributions
 def show_property_distributions(data, outliers):
     """ Plots the pdfs of the data properties
@@ -247,52 +199,6 @@ def show_correlations(num_props, path):
             cnt += 1
 
     pyplot.show()
-
-## Mixture of Gaussians Model
-def segment(data, outliers, num_components=2):
-    """ Classifies each pixel into components using a Gaussian mixture model
-    Args:
-        data (np.array): data
-        outliers (np.array): outliers mask
-        num_components (int): number of classes
-        normal (bool): flag to apply normalization of data
-    Returns:
-        (np.array): matrix of classification per pixel
-    """
-    h, w, c = data.shape
-    n = h * w
-
-    # Normalize full data for prediction
-    data = data.reshape(n, c)
-    m = np.max(np.abs(data), axis=0)
-    normal_data = data / m
-
-    # Normalize data without outliers for fitting
-    outliers = outliers.flatten()
-    no_outliers_data = [data[i] for i in range(n) if not outliers[i]]
-    m = np.max(np.abs(no_outliers_data), axis=0)
-    normal_no_outliers_data = no_outliers_data / m
-
-    gmm = GaussianMixture(n_components=num_components, covariance_type='full')
-    gmm.fit(normal_no_outliers_data)
-
-    l = gmm.predict(normal_data) # provides a gmm component to all data points
-    return l.reshape(h, w)
-
-def apply_segmentation(data, outliers):
-    """ Gets classification of pixels after segmentation
-    Args:
-        data (np.array): data
-        outliers (np.array): outliers
-    Returns:
-        labels (np.array): matrix of classification per pixel
-    """
-    labels = segment(data, outliers)
-
-    labels += 1 # all labels move up one
-    labels *= (1 - outliers) # outliers map to label 0
-
-    return labels
 
 def get_unique_labels(labels):
     """ Gets unique labels """
