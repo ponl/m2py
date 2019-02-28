@@ -40,6 +40,10 @@ def main(data_path=None, example_number=None):
 
         # Get outliers
         outliers = mm.extract_outliers(data)
+        mm.show_outliers(data, outliers)
+
+        # Shows a-priori (classification) property distributions
+        mm.show_property_distributions(data, outliers)
 
         # Initialize GMM segmentation
         seg = seg_gmm.SegmenterGMM(n_components=2)
