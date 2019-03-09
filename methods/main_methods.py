@@ -18,24 +18,31 @@ LABEL_THRESH = 1000 # each label must have more than this number of pixels
 ALPHA = 0.8
 NUM_BINS = 30
 
-NUM_COLS = 4 # number of cols in plots
+NUM_COLS = 2 # number of cols in plots
 
 ## Properties Distributions
-def show_property_distributions(data, outliers):
+def show_property_distributions(data, outliers=None):
     """ Plots the pdfs of the data properties
     Args:
         data (np array): data
         outliers (np array): outliers
     """
-    fig = pyplot.figure(figsize=(15, 10), dpi=80, facecolor='w', edgecolor='k')
-
     h, w, c = data.shape
+    num_plots = c
+    num_cols = NUM_COLS
+    num_rows = int(np.ceil(num_plots / num_cols))
+
+    fig = pyplot.figure(figsize=(15, 8), dpi=80, facecolor='w', edgecolor='k')
     for j in range(c):
-        x = [data[n,m,j] for n in range(h) for m in range(w) if not outliers[n,m]]
-        pyplot.subplot(2, 3, j+1) # TODO how to ensure break down of plots?
-        pyplot.title(PROPS[j])
+        if outliers is not None:
+            x = [data[n,m,j] for n in range(h) for m in range(w) if not outliers[n,m]]
+        else:
+            x = [data[n,m,j] for n in range(h) for m in range(w)]
+
+        pyplot.subplot(num_rows, num_cols, j+1)
         sb.distplot(x) # TODO warning gets thrown out when using this
         pyplot.grid()
+        pyplot.title(PROPS[j])
 
     pyplot.show()
 
@@ -223,19 +230,20 @@ def show_classification(labels, data):
 
     h, w, c = data.shape
     num_plots = 2 * c
-    num_rows = int(np.ceil(num_plots / NUM_COLS))
+    num_cols = 2 * NUM_COLS
+    num_rows = int(np.ceil(num_plots / num_cols))
 
     fig = pyplot.figure(figsize=(16, 30), dpi=80, facecolor='w', edgecolor='k')
     cnt = 1
     cmap = pyplot.get_cmap('jet', num_labels)
     for i in range(c):
-        ax_l = pyplot.subplot(num_rows, NUM_COLS, cnt)
+        ax_l = pyplot.subplot(num_rows, num_cols, cnt)
         cnt += 1
         ax_l.set_title(PROPS[i])
         m = ax_l.imshow(data[:, :, i])
         pyplot.colorbar(m, fraction=0.046, pad=0.04)
 
-        ax_r = pyplot.subplot(num_rows, NUM_COLS, cnt)
+        ax_r = pyplot.subplot(num_rows, num_cols, cnt)
         cnt += 1
         ax_r.set_title("Segmentation")
         for index, j in enumerate(grain_labels): # plots mask and distribution per class
@@ -248,11 +256,12 @@ def show_classification(labels, data):
     pyplot.tight_layout()
     pyplot.show()
 
-def show_classification_distributions(labels, data):
+def show_classification_distributions(labels, data, title_flag=True):
     """ Shows distributions of classes after segmentation
     Args:
         labels (np.array): matrix of classification per pixel
         data (np.array): data
+        title_flag (bool): to show titles or not
     """
     unique_labels = get_unique_labels(labels)
     grain_labels = [l for l in unique_labels if np.sum(labels==l) > LABEL_THRESH]
@@ -260,22 +269,23 @@ def show_classification_distributions(labels, data):
 
     h, w, c = data.shape
     num_plots = 2 * c
-    num_rows = int(np.ceil(num_plots / NUM_COLS))
+    num_cols = 2 * NUM_COLS
+    num_rows = int(np.ceil(num_plots / num_cols))
 
     fig = pyplot.figure(figsize=(20, 20), dpi=80, facecolor='w', edgecolor='k')
     cnt = 1
     cmap = pyplot.get_cmap('jet', num_labels)
     for i in range(c):
-        ax_l = pyplot.subplot(num_rows, NUM_COLS, cnt)
+        ax_l = pyplot.subplot(num_rows, num_cols, cnt)
         cnt += 1
-        ax_l.set_title(PROPS[i])
+        if title_flag: ax_l.set_title(PROPS[i])
         m = ax_l.imshow(data[:, :, i], aspect='auto')
         pyplot.colorbar(m, fraction=0.046, pad=0.04)
 
-        ax_r = pyplot.subplot(num_rows, NUM_COLS, cnt)
+        ax_r = pyplot.subplot(num_rows, num_cols, cnt)
         cnt += 1
         ax_r.grid()
-        ax_r.set_title(PROPS[i])
+        ax_r.set_title("Distributions")
         for index, j in enumerate(grain_labels):
             color_step = num_labels - (index + 1)
             ax_r.hist(data[:, :, i][labels == j], NUM_BINS, alpha=ALPHA, density=True, color=cmap(color_step))
@@ -337,20 +347,21 @@ def show_distributions_together(labels, data):
 
     h, w, c = data.shape
     num_plots = 2 * c
-    num_rows = int(np.ceil(num_plots / NUM_COLS))
+    num_cols = 2 * NUM_COLS
+    num_rows = int(np.ceil(num_plots / num_cols))
 
     fig = pyplot.figure(figsize=(20, 20), dpi=80, facecolor='w', edgecolor='k')
     cnt = 1
     cmap = pyplot.get_cmap('jet', num_labels)
     for i in range(c):
-        ax_l = pyplot.subplot(num_rows, NUM_COLS, cnt)
+        ax_l = pyplot.subplot(num_rows, num_cols, cnt)
         cnt += 1
-        ax_l.set_title(PROPS[i])
+        ax_l.set_title("Segmentation")
 
-        ax_r = pyplot.subplot(num_rows, NUM_COLS, cnt)
+        ax_r = pyplot.subplot(num_rows, num_cols, cnt)
         cnt += 1
-        ax_r.grid()
         ax_r.set_title(PROPS[i])
+        ax_r.grid()
 
         for index, j in enumerate(grain_labels): # plots mask and distribution per class
             color_step = num_labels - (index + 1)
@@ -374,7 +385,8 @@ def show_distributions_separately(labels, data):
 
     h, w, c = data.shape
     num_plots = 2 * c
-    num_rows = int(np.ceil(num_plots / NUM_COLS))
+    num_cols = 2 * NUM_COLS
+    num_rows = int(np.ceil(num_plots / num_cols))
 
     cmap = pyplot.get_cmap('jet', num_labels)
     for index, gl in enumerate(grain_labels):
@@ -382,7 +394,7 @@ def show_distributions_separately(labels, data):
         fig = pyplot.figure(figsize=(20, 20), dpi=80, facecolor='w', edgecolor='k')
         cnt = 1
         for i in range(c):
-            ax_l = pyplot.subplot(num_rows, NUM_COLS, cnt)
+            ax_l = pyplot.subplot(num_rows, num_cols, cnt)
             cnt += 1
             ax_l.set_title(PROPS[i])
             m = ax_l.imshow(data[:, :, i], aspect='auto')
@@ -390,9 +402,9 @@ def show_distributions_separately(labels, data):
             ax_l.imshow(mask, alpha=1, cmap='bone', aspect='auto', vmin=0, vmax=1)
             pyplot.colorbar(m, fraction=0.046, pad=0.04)
 
-            ax_r = pyplot.subplot(num_rows, NUM_COLS, cnt)
+            ax_r = pyplot.subplot(num_rows, num_cols, cnt)
             cnt += 1
-            ax_r.set_title(PROPS[i])
+            ax_r.set_title('Distribution')
             ax_r.hist(data[:, :, i][labels == gl], NUM_BINS, alpha=ALPHA, density=True, color=cmap(color_step))
             ax_r.grid()
 
@@ -409,19 +421,20 @@ def show_overlaid_distribution(probs, data):
     h, w, c = data.shape
 
     num_plots = n + c
-    num_rows = int(np.ceil(num_plots / NUM_COLS))
+    num_cols = 2 * NUM_COLS
+    num_rows = int(np.ceil(num_plots / num_cols))
 
     fig = pyplot.figure(figsize=(20, 20), dpi=80, facecolor='w', edgecolor='k')
     cnt = 1
     for i in range(c):
-        ax = pyplot.subplot(num_rows, NUM_COLS, cnt)
+        ax = pyplot.subplot(num_rows, num_cols, cnt)
         cnt += 1
+        ax.set_title(PROPS[i])
         m = ax.imshow(data[:, :, i])
         pyplot.colorbar(m, fraction=0.046, pad=0.04)
-        ax.set_title(PROPS[i])
 
     for i in range(n):
-        ax = pyplot.subplot(num_rows, NUM_COLS, cnt)
+        ax = pyplot.subplot(num_rows, num_cols, cnt)
         cnt += 1
         m = ax.imshow(probs[:, :, i], vmin=0, vmax=1)
         pyplot.colorbar(m, fraction=0.046, pad=0.04)

@@ -46,7 +46,7 @@ def main(data_path=None, example_number=None):
         outliers = mm.extract_outliers(data)
         mm.show_outliers(data, outliers)
 
-        # Shows a-priori (classification) property distributions
+        # Shows a-priori property distributions
         mm.show_property_distributions(data, outliers)
 
         # Initialize GMM segmentation
@@ -88,6 +88,9 @@ def main(data_path=None, example_number=None):
         n = h * w
         pca_components = seg.pca.transform(data.reshape(n, c))  # NOTE PCA was trained while fitting pre_seg
         pca_components = pca_components.reshape(h, w, num_pca_components)  # shape (512, 512, num_pca_components)
+
+        # Plot classification distributions of PCA components
+        mm.show_classification_distributions(pre_labels, pca_components, title_flag=False)
 
         # Create unique masks per grain
         post_labels = seg.get_grains(pre_labels)
