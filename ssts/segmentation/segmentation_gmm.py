@@ -99,8 +99,8 @@ class SegmenterGMM(object):
             outliers (NumPy Array): Binary array indicating outliers of shape (height, width)
 
         Returns:
-            labels (NumPy Array): The segmented array. Each pixel receives
-                a label corresponding to its segment, of shape (height, width).
+            labels (NumPy Array): The segmented array of shape (height, width). Each pixel receives
+                a label corresponding to its segment.
         """
         if self.gmm is None:
             logger.warning("Attempting to transform prior to fitting. You must call .fit() first.")
@@ -138,8 +138,8 @@ class SegmenterGMM(object):
             outliers (NumPy Array): Binary array indicating outliers of shape (height, width)
 
         Returns:
-            labels (NumPy Array): The segmented array. Each pixel receives
-                a label corresponding to its segment, of shape (height, width).
+            labels (NumPy Array): The segmented array of shape (height, width). Each pixel receives
+                a label corresponding to its segment.
         """
         gmm = self.fit(data, outliers)
 
@@ -147,6 +147,40 @@ class SegmenterGMM(object):
             return None
 
         return self.transform(data, outliers)
+
+    def get_probabilities(self, data, outliers=None):
+        """
+        Computes likelihood of pixel for all classes.
+
+        Args:
+            data (NumPy Array): Material properties array of shape (height, width, n_properties)
+            outliers (NumPy Array): Binary array indicating outliers of shape (height, width)
+
+        Returns:
+            probs (NumPy Array): The array of probabilities of shape (height, width, num_components).
+                Each pixel receives a probability per class.
+        """
+        if self.gmm is None:
+            logger.warning("Attempting to access model prior to fitting. You must call .fit() first.")
+            return None
+
+        h, w, c = data.shape
+        n = h * w
+
+        if self.padding > 0:
+            data = SegmenterGMM.get_windows(data, padding=self.padding)
+        else:
+            data = data.reshape(n, c)
+
+        if self.normalize:
+            data = self.sst.transform(data) if self.zscale else SegmenterGMM.normalize_by_max(data)
+
+        if self.embedding_dim is not None:
+            data = self.pca.transform(data)
+
+        vector_probs = self.gmm.predict_proba(data)
+        probs = vector_probs.reshape(h, w, self.n_components)
+        return probs
 
     @staticmethod
     def remove_outliers(data, outliers):

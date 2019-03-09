@@ -18,6 +18,8 @@ LABEL_THRESH = 1000 # each label must have more than this number of pixels
 ALPHA = 0.8
 NUM_BINS = 30
 
+NUM_COLS = 4 # number of cols in plots
+
 ## Properties Distributions
 def show_property_distributions(data, outliers):
     """ Plots the pdfs of the data properties
@@ -47,7 +49,7 @@ def extract_outliers(data, height_index=HEIGHT_INDEX, threshold=2.5):
     Returns:
         (np array): boolean matrix denoting outliers
     """
-    x = data[:,:,height_index]
+    x = data[:, :, height_index]
 
     # Smooth data
     flt = np.array([[0.5, 0.5, 0.5], [0.5, 1, 0.5], [0.5, 0.5, 0.5]])
@@ -71,7 +73,7 @@ def show_outliers(data, outliers, height_index=HEIGHT_INDEX):
     fig = pyplot.figure(figsize=(18,5))
 
     pyplot.subplot(1,3,1)
-    m = pyplot.imshow(data[:,:,height_index], aspect="auto")
+    m = pyplot.imshow(data[:, :, height_index], aspect="auto")
     pyplot.title('Height')
     pyplot.colorbar(m, fraction=0.046, pad=0.04)
 
@@ -82,7 +84,7 @@ def show_outliers(data, outliers, height_index=HEIGHT_INDEX):
     no_outliers_data = np.copy(data)
     no_outliers_data[outliers == 1] = 0
     pyplot.subplot(1,3,3)
-    m = pyplot.imshow(no_outliers_data[:,:,height_index], aspect='auto')
+    m = pyplot.imshow(no_outliers_data[:, :, height_index], aspect='auto')
     pyplot.title('Height')
     pyplot.colorbar(m, fraction=0.046, pad=0.04)
 
@@ -146,7 +148,7 @@ def get_correlations(path):
         C = np.zeros((c,c)) # correlation matrix of properties per file
         for j in range(c):
             for k in range(j, c):
-                C[j,k] = C[k,j] = np.corrcoef(data[:,:,j].flatten(), data[:,:,k].flatten())[0][1]
+                C[j,k] = C[k,j] = np.corrcoef(data[:, :, j].flatten(), data[:, :, k].flatten())[0][1]
 
         cors.append(C)
 
@@ -219,18 +221,21 @@ def show_classification(labels, data):
     grain_labels = [l for l in unique_labels if np.sum(labels==l) > LABEL_THRESH]
     num_labels = len(grain_labels)
 
-    c = data.shape[2]
+    h, w, c = data.shape
+    num_plots = 2 * c
+    num_rows = int(np.ceil(num_plots / NUM_COLS))
+
     fig = pyplot.figure(figsize=(16, 30), dpi=80, facecolor='w', edgecolor='k')
     cnt = 1
     cmap = pyplot.get_cmap('jet', num_labels)
     for i in range(c):
-        ax_l = pyplot.subplot(3,4,cnt)
+        ax_l = pyplot.subplot(num_rows, NUM_COLS, cnt)
         cnt += 1
         ax_l.set_title(PROPS[i])
-        m = ax_l.imshow(data[:,:,i])
+        m = ax_l.imshow(data[:, :, i])
         pyplot.colorbar(m, fraction=0.046, pad=0.04)
 
-        ax_r = pyplot.subplot(3,4,cnt)
+        ax_r = pyplot.subplot(num_rows, NUM_COLS, cnt)
         cnt += 1
         ax_r.set_title("Segmentation")
         for index, j in enumerate(grain_labels): # plots mask and distribution per class
@@ -253,24 +258,27 @@ def show_classification_distributions(labels, data):
     grain_labels = [l for l in unique_labels if np.sum(labels==l) > LABEL_THRESH]
     num_labels = len(grain_labels)
 
-    c = data.shape[2]
+    h, w, c = data.shape
+    num_plots = 2 * c
+    num_rows = int(np.ceil(num_plots / NUM_COLS))
+
     fig = pyplot.figure(figsize=(20, 20), dpi=80, facecolor='w', edgecolor='k')
     cnt = 1
     cmap = pyplot.get_cmap('jet', num_labels)
     for i in range(c):
-        ax_l = pyplot.subplot(3,4,cnt)
+        ax_l = pyplot.subplot(num_rows, NUM_COLS, cnt)
         cnt += 1
         ax_l.set_title(PROPS[i])
-        m = ax_l.imshow(data[:,:,i], aspect='auto')
+        m = ax_l.imshow(data[:, :, i], aspect='auto')
         pyplot.colorbar(m, fraction=0.046, pad=0.04)
 
-        ax_r = pyplot.subplot(3,4,cnt)
+        ax_r = pyplot.subplot(num_rows, NUM_COLS, cnt)
         cnt += 1
         ax_r.grid()
         ax_r.set_title(PROPS[i])
         for index, j in enumerate(grain_labels):
             color_step = num_labels - (index + 1)
-            ax_r.hist(data[:,:,i][labels == j], NUM_BINS, alpha=ALPHA, density=True, color=cmap(color_step))
+            ax_r.hist(data[:, :, i][labels == j], NUM_BINS, alpha=ALPHA, density=True, color=cmap(color_step))
 
     pyplot.tight_layout()
     pyplot.show()
@@ -327,16 +335,19 @@ def show_distributions_together(labels, data):
     grain_labels = [l for l in unique_labels if np.sum(labels==l) > LABEL_THRESH]
     num_labels = len(grain_labels)
 
-    c = data.shape[2]
+    h, w, c = data.shape
+    num_plots = 2 * c
+    num_rows = int(np.ceil(num_plots / NUM_COLS))
+
     fig = pyplot.figure(figsize=(20, 20), dpi=80, facecolor='w', edgecolor='k')
     cnt = 1
     cmap = pyplot.get_cmap('jet', num_labels)
     for i in range(c):
-        ax_l = pyplot.subplot(3,4,cnt)
+        ax_l = pyplot.subplot(num_rows, NUM_COLS, cnt)
         cnt += 1
         ax_l.set_title(PROPS[i])
 
-        ax_r = pyplot.subplot(3,4,cnt)
+        ax_r = pyplot.subplot(num_rows, NUM_COLS, cnt)
         cnt += 1
         ax_r.grid()
         ax_r.set_title(PROPS[i])
@@ -346,7 +357,7 @@ def show_distributions_together(labels, data):
             mask = np.ma.masked_where(labels!=j, color_step * np.ones(labels.shape))
             ax_l.imshow(mask, alpha=ALPHA, cmap=cmap, aspect='auto', vmin=0, vmax=num_labels)
 
-            ax_r.hist(data[:,:,i][labels == j], NUM_BINS, alpha=ALPHA, density=True, color=cmap(color_step))
+            ax_r.hist(data[:, :, i][labels == j], NUM_BINS, alpha=ALPHA, density=True, color=cmap(color_step))
 
     pyplot.tight_layout()
     pyplot.show()
@@ -361,29 +372,61 @@ def show_distributions_separately(labels, data):
     grain_labels = [l for l in unique_labels if np.sum(labels==l) > LABEL_THRESH]
     num_labels = len(grain_labels)
 
+    h, w, c = data.shape
+    num_plots = 2 * c
+    num_rows = int(np.ceil(num_plots / NUM_COLS))
+
     cmap = pyplot.get_cmap('jet', num_labels)
     for index, gl in enumerate(grain_labels):
         color_step = num_labels - (index + 1)
-        c = data.shape[2]
         fig = pyplot.figure(figsize=(20, 20), dpi=80, facecolor='w', edgecolor='k')
         cnt = 1
         for i in range(c):
-            ax_l = pyplot.subplot(3,4,cnt)
+            ax_l = pyplot.subplot(num_rows, NUM_COLS, cnt)
             cnt += 1
             ax_l.set_title(PROPS[i])
-            m = ax_l.imshow(data[:,:,i], aspect='auto')
+            m = ax_l.imshow(data[:, :, i], aspect='auto')
             mask = np.ma.masked_where(labels==gl, np.ones(labels.shape))
             ax_l.imshow(mask, alpha=1, cmap='bone', aspect='auto', vmin=0, vmax=1)
             pyplot.colorbar(m, fraction=0.046, pad=0.04)
 
-            ax_r = pyplot.subplot(3,4,cnt)
+            ax_r = pyplot.subplot(num_rows, NUM_COLS, cnt)
             cnt += 1
             ax_r.set_title(PROPS[i])
-            ax_r.hist(data[:,:,i][labels == gl], NUM_BINS, alpha=ALPHA, density=True, color=cmap(color_step))
+            ax_r.hist(data[:, :, i][labels == gl], NUM_BINS, alpha=ALPHA, density=True, color=cmap(color_step))
             ax_r.grid()
 
         pyplot.tight_layout()
         pyplot.show()
+
+def show_overlaid_distribution(probs, data):
+    """ Plots distributions overlaid on pixels
+    Args:
+        probs (np.array): array of probabilities per pixel
+        data (np.array): data
+    """
+    h, w, n = probs.shape
+    h, w, c = data.shape
+
+    num_plots = n + c
+    num_rows = int(np.ceil(num_plots / NUM_COLS))
+
+    fig = pyplot.figure(figsize=(20, 20), dpi=80, facecolor='w', edgecolor='k')
+    cnt = 1
+    for i in range(c):
+        ax = pyplot.subplot(num_rows, NUM_COLS, cnt)
+        cnt += 1
+        m = ax.imshow(data[:, :, i])
+        pyplot.colorbar(m, fraction=0.046, pad=0.04)
+        ax.set_title(PROPS[i])
+
+    for i in range(n):
+        ax = pyplot.subplot(num_rows, NUM_COLS, cnt)
+        cnt += 1
+        m = ax.imshow(probs[:, :, i], vmin=0, vmax=1)
+        pyplot.colorbar(m, fraction=0.046, pad=0.04)
+
+    pyplot.show()
 
 # NOTE Auxilliary methods for creating discrete colorbar
 def colorbar_index(ncolors, cmap):

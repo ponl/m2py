@@ -35,6 +35,10 @@ def main(data_path=None, example_number=None):
         # Plot classification distributions
         mm.show_classification_distributions(labels, data)
 
+        # Overlay distributions on pixels
+        probs = seg.get_probabilities(data)
+        mm.show_overlaid_distribution(probs, data)
+
     ## NOTE Segmentation example using outliers
     elif example_number == "1":
 
@@ -105,7 +109,7 @@ def main(data_path=None, example_number=None):
         outliers = mm.extract_outliers(data)
 
         # Initialize GMM segmentation # TODO need to optimize these parameters
-        seg = seg_gmm.SegmenterGMM(n_components=2, padding=3, embedding_dim=10, zscale=True)
+        seg = seg_gmm.SegmenterGMM(n_components=3, padding=3, embedding_dim=10, zscale=True)
 
         # Run segmentation
         labels = seg.fit_transform(data, outliers)
@@ -133,7 +137,7 @@ def main(data_path=None, example_number=None):
         # Choose material property to segment
         prop_data = data[:, :, 4]  # NOTE height
 
-        # Apply optimal merging threshold to watershed algorithm
+        # Apply merging threshold to watershed algorithm
         labels = seg.fit_transform(prop_data, outliers, 0.4)
 
         # Plot classification
