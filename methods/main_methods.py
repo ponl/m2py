@@ -11,7 +11,7 @@ from methods import config
 
 PROPS = config.data_properties
 HEIGHT_INDEX = config.height_index
-SAMPLE_SIZE = {'backgrounded': 1, '2componentfilms': 0.5, 'nanowires': 5} # nano-meters
+SAMPLE_SIZE = {'backgrounded': 2, '2componentfilms': 0.5, 'nanowires': 5} # micro-meters
 
 LABEL_THRESH = 1000 # each label must have more than this number of pixels
 
@@ -329,8 +329,8 @@ def show_grain_area_distribution(labels, data_type):
     pyplot.plot(physical_sig_areas, 'ro')
     pyplot.plot(physical_sig_areas, 'b')
     pyplot.xlabel('Grain')
-    pyplot.ylabel('Grain area (nm)')
-    pyplot.title('Grain Area (nm)')
+    pyplot.ylabel('Grain area (mum2)')
+    pyplot.title('Grain Area (mum2)')
     pyplot.grid()
 
     pyplot.show()
