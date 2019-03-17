@@ -188,6 +188,36 @@ def main(data_path=None, example_number=None):
         # Plot classification distributions with masks
         mm.show_distributions_together(labels, data)  # all classes plotted together
 
+    # NOTE Wes workflow
+    elif example_number == "7":
+
+        # Extract outliers
+        outliers = mm.extract_outliers(data)
+        mm.show_outliers(data, outliers)
+
+        no_outliers_data = np.copy(data)
+        no_outliers_data[outliers==1] = 0
+
+        # Run GMM segmentation
+        seg1 = seg_gmm.SegmenterGMM(n_components=2, embedding_dim=5)
+        seg1_labels = seg1.fit_transform(data, outliers)
+
+        # Remove height property (optional)
+        #no_height_data = np.delete(no_outliers_data, 4, axis=2)
+        #seg1_labels = seg1.fit_transform(no_height_data, outliers)
+
+        # Plot classification
+        mm.show_classification(seg1_labels, no_outliers_data)
+
+        # Plot classification distributions
+        mm.show_distributions_together(seg1_labels, no_outliers_data)
+
+        # Create unique masks per grain
+        seg2_labels = seg1.get_grains(seg1_labels)
+
+        # Plot grain classification
+        mm.show_classification(seg2_labels, no_outliers_data)
+
     ## NOTE Not valid example numbers
     else:
         print(f"Wrong example number inputted: {example_number}.")
