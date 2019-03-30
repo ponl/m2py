@@ -5,6 +5,7 @@ import numpy as np
 from scipy import signal
 from matplotlib import pyplot, colors, cm
 from sklearn.mixture import GaussianMixture
+from scipy.fftpack import fft2, ifft2, fftshift, ifftshift
 
 from methods import config
 
@@ -31,7 +32,7 @@ def show_property_distributions(data, outliers=None):
     num_cols = NUM_COLS
     num_rows = int(np.ceil(num_plots / num_cols))
 
-    fig = pyplot.figure(figsize=(15, 8), dpi=80, facecolor='w', edgecolor='k')
+    fig = pyplot.figure(figsize=(10, 15), dpi=80, facecolor='w', edgecolor='k')
     for j in range(c):
         if outliers is not None:
             x = [data[n,m,j] for n in range(h) for m in range(w) if not outliers[n,m]]
@@ -39,10 +40,11 @@ def show_property_distributions(data, outliers=None):
             x = [data[n,m,j] for n in range(h) for m in range(w)]
 
         pyplot.subplot(num_rows, num_cols, j+1)
-        pyplot.hist(x, bins=200, alpha=ALPHA, density=True)
+        pyplot.hist(x, NUM_BINS, alpha=ALPHA, density=True)
         pyplot.grid()
         pyplot.title(PROPS[j])
 
+    pyplot.tight_layout()
     pyplot.show()
 
 ## Outlier Detection
@@ -76,7 +78,7 @@ def show_outliers(data, outliers, height_index=HEIGHT_INDEX):
         outliers (np array): outliers
         height_index (int): index of height property
     """
-    fig = pyplot.figure(figsize=(18,5))
+    fig = pyplot.figure(figsize=(15,4))
 
     pyplot.subplot(1,3,1)
     m = pyplot.imshow(data[:, :, height_index], aspect="auto")
@@ -96,6 +98,29 @@ def show_outliers(data, outliers, height_index=HEIGHT_INDEX):
 
     pyplot.tight_layout()
     pyplot.show()
+
+## Frequency removal
+def apply_frequency_removal(data):
+    h, w, c = data.shape
+    num_plots = c
+    num_cols = NUM_COLS
+    num_rows = int(np.ceil(num_plots / num_cols))
+
+    fig = pyplot.figure(figsize=(10, 15), dpi=80, facecolor='w', edgecolor='k')
+    for j in range(c):
+        prop = data[:, :, j]
+        f_prop = fft2(prop)
+        f_prop_shift = fftshift(f_prop)
+
+        pyplot.subplot(num_rows, num_cols, j+1)
+        pyplot.imshow(np.abs(f_prop_shift))
+        pyplot.title(PROPS[j])
+
+    pyplot.tight_layout()
+    pyplot.show()
+
+
+
 
 ## Features Correlations
 def get_all_paths(path):
@@ -200,6 +225,7 @@ def show_correlations(num_props, path):
             P = get_correlation_values(cors, i, j)
             V = [p for p in P if not np.isnan(p)]
 
+            # TODO how many bins?
             pyplot.hist(V, bins=10, alpha=ALPHA, density=True)
             pyplot.xlabel("Correlation")
             pyplot.xlim(-1,1)
@@ -233,7 +259,7 @@ def show_classification(labels, data):
     num_cols = 2 * NUM_COLS
     num_rows = int(np.ceil(num_plots / num_cols))
 
-    fig = pyplot.figure(figsize=(16, 30), dpi=80, facecolor='w', edgecolor='k')
+    fig = pyplot.figure(figsize=(20, 14), dpi=80, facecolor='w', edgecolor='k')
     cnt = 1
     cmap = pyplot.get_cmap('jet', num_labels)
     for i in range(c):
@@ -272,7 +298,7 @@ def show_classification_distributions(labels, data, title_flag=True):
     num_cols = 2 * NUM_COLS
     num_rows = int(np.ceil(num_plots / num_cols))
 
-    fig = pyplot.figure(figsize=(20, 20), dpi=80, facecolor='w', edgecolor='k')
+    fig = pyplot.figure(figsize=(20, 15), dpi=80, facecolor='w', edgecolor='k')
     cnt = 1
     cmap = pyplot.get_cmap('jet', num_labels)
     for i in range(c):
@@ -350,7 +376,7 @@ def show_distributions_together(labels, data):
     num_cols = 2 * NUM_COLS
     num_rows = int(np.ceil(num_plots / num_cols))
 
-    fig = pyplot.figure(figsize=(20, 20), dpi=80, facecolor='w', edgecolor='k')
+    fig = pyplot.figure(figsize=(20, 15), dpi=80, facecolor='w', edgecolor='k')
     cnt = 1
     cmap = pyplot.get_cmap('jet', num_labels)
     for i in range(c):
@@ -391,7 +417,7 @@ def show_distributions_separately(labels, data):
     cmap = pyplot.get_cmap('jet', num_labels)
     for index, gl in enumerate(grain_labels):
         color_step = num_labels - (index + 1)
-        fig = pyplot.figure(figsize=(20, 20), dpi=80, facecolor='w', edgecolor='k')
+        fig = pyplot.figure(figsize=(20, 15), dpi=80, facecolor='w', edgecolor='k')
         cnt = 1
         for i in range(c):
             ax_l = pyplot.subplot(num_rows, num_cols, cnt)
@@ -424,7 +450,7 @@ def show_overlaid_distribution(probs, data):
     num_cols = 2 * NUM_COLS
     num_rows = int(np.ceil(num_plots / num_cols))
 
-    fig = pyplot.figure(figsize=(20, 20), dpi=80, facecolor='w', edgecolor='k')
+    fig = pyplot.figure(figsize=(20, 15), dpi=80, facecolor='w', edgecolor='k')
     cnt = 1
     for i in range(c):
         ax = pyplot.subplot(num_rows, num_cols, cnt)
