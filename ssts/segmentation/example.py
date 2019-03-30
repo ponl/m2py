@@ -5,7 +5,6 @@ import segmentation_gmm as seg_gmm
 import segmentation_watershed as seg_water
 from methods import main_methods as mm  # NOTE SSTS directory must be in PYTHONPATH
 
-
 def main(data_path=None, example_number=None):
     if data_path is not None and example_number is not None:
         args = argparse.Namespace(data_path=data_path, example_number=example_number)
@@ -193,13 +192,15 @@ def main(data_path=None, example_number=None):
 
         # Extract outliers
         outliers = mm.extract_outliers(data)
-        mm.show_outliers(data, outliers)
-
         no_outliers_data = np.copy(data)
         no_outliers_data[outliers==1] = 0
+        mm.show_outliers(data, outliers)
+
+        # Show a-priori distributions
+        mm.show_property_distributions(data, outliers)
 
         # Run GMM segmentation
-        seg1 = seg_gmm.SegmenterGMM(n_components=2, embedding_dim=5)
+        seg1 = seg_gmm.SegmenterGMM(n_components=2)
         seg1_labels = seg1.fit_transform(data, outliers)
 
         # Remove height property (optional)

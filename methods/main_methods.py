@@ -2,7 +2,6 @@ import os
 from collections import Counter
 
 import numpy as np
-import seaborn as sb
 from scipy import signal
 from matplotlib import pyplot, colors, cm
 from sklearn.mixture import GaussianMixture
@@ -40,7 +39,7 @@ def show_property_distributions(data, outliers=None):
             x = [data[n,m,j] for n in range(h) for m in range(w)]
 
         pyplot.subplot(num_rows, num_cols, j+1)
-        sb.distplot(x) # TODO warning gets thrown out when using this
+        pyplot.hist(x, bins=200, alpha=ALPHA, density=True)
         pyplot.grid()
         pyplot.title(PROPS[j])
 
@@ -173,6 +172,7 @@ def get_correlation_values(cors, r, c):
     rc_cors = [cor[r,c] for cor in cors]
     return rc_cors
 
+# TODO use with many data files
 def show_correlations(num_props, path):
     """ Plots correlations between all properties
     Args:
@@ -200,7 +200,7 @@ def show_correlations(num_props, path):
             P = get_correlation_values(cors, i, j)
             V = [p for p in P if not np.isnan(p)]
 
-            sb.distplot(V) # TODO warning gets thrown out when using this
+            pyplot.hist(V, bins=10, alpha=ALPHA, density=True)
             pyplot.xlabel("Correlation")
             pyplot.xlim(-1,1)
             pyplot.grid()
