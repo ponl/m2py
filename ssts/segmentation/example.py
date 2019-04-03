@@ -190,6 +190,9 @@ def main(data_path=None, example_number=None):
     # NOTE Wes workflow
     elif example_number == "7":
 
+        # Apply frequency removal
+        data = mm.apply_frequency_removal(data)
+
         # Extract outliers
         outliers = mm.extract_outliers(data)
         no_outliers_data = np.copy(data)
