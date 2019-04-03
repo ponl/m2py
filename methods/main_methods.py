@@ -6,7 +6,6 @@ from scipy import signal
 from matplotlib import pyplot, colors, cm
 from sklearn.mixture import GaussianMixture
 from scipy.fftpack import fft2, ifft2, fftshift, ifftshift
-
 from methods import config
 
 PROPS = config.data_properties
@@ -100,26 +99,71 @@ def show_outliers(data, outliers, height_index=HEIGHT_INDEX):
     pyplot.show()
 
 ## Frequency removal
-def apply_frequency_removal(data):
+def apply_frequency_removal(data, compression_percent=0.25):
+    """ Removes low frequencies from data
+    Args:
+        data (np array): data
+        compression_percent (float): percentage of compression
+    Returns:
+        new_data (np array): compressed data
+    """
+    def remove_low_freqs(f_prop_shift, h, w, compression_percent):
+        """ Removes low frequencies in Fourier space
+        Args:
+            f_prop_shift (np.array): frequencies
+            h (int): height of data array
+            w (int): width of data array
+            compression_percent (float): percentage of compression
+        Returns:
+            f_prop_shift (np.array): high frequencies
+        """
+        for i in range(h):
+            for j in range(w):
+                if ((i - h / 2) / (h / 2)) ** 2 + ((j - w / 2) / (w / 2)) ** 2 > compression_percent:
+                    f_prop_shift[i,j] = 0
+
+        return f_prop_shift
+
+    new_data = np.copy(data)
+
     h, w, c = data.shape
-    num_plots = c
-    num_cols = NUM_COLS
+    num_plots = 3 * c
+    num_cols = 3 * NUM_COLS
     num_rows = int(np.ceil(num_plots / num_cols))
 
-    fig = pyplot.figure(figsize=(10, 15), dpi=80, facecolor='w', edgecolor='k')
-    for j in range(c):
-        prop = data[:, :, j]
+    fig = pyplot.figure(figsize=(14, 21), dpi=80, facecolor='w', edgecolor='k')
+    count = 1
+    for k in range(c):
+        prop = data[:, :, k]
+
+        pyplot.subplot(num_rows, num_cols, count)
+        pyplot.title(PROPS[k])
+        pyplot.imshow(prop)
+        count += 1
+
         f_prop = fft2(prop)
         f_prop_shift = fftshift(f_prop)
+        f_prop_shift = remove_low_freqs(f_prop_shift, h, w, compression_percent)
 
-        pyplot.subplot(num_rows, num_cols, j+1)
-        pyplot.imshow(np.abs(f_prop_shift))
-        pyplot.title(PROPS[j])
+        pyplot.subplot(num_rows, num_cols, count)
+        pyplot.imshow(np.abs(f_prop_shift), norm=colors.LogNorm(vmin=np.mean(np.abs(f_prop_shift))))
+        pyplot.title("High Frequencies")
+        count += 1
+
+        f_prop = ifftshift(f_prop_shift)
+        high_prop = np.real(ifft2(f_prop))
+
+        pyplot.subplot(num_rows, num_cols, count)
+        pyplot.title(PROPS[k])
+        pyplot.imshow(high_prop)
+        count += 1
+
+        new_data[:,:,k] = high_prop
 
     pyplot.tight_layout()
     pyplot.show()
 
-
+    return new_data
 
 
 ## Features Correlations
