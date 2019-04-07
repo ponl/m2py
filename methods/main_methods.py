@@ -99,7 +99,7 @@ def show_outliers(data, outliers, height_index=HEIGHT_INDEX):
     pyplot.show()
 
 ## Frequency removal
-def apply_frequency_removal(data, compression_percent=0.25):
+def apply_frequency_removal(data, compression_percent=95):
     """ Removes low frequencies from data
     Args:
         data (np array): data
@@ -117,11 +117,10 @@ def apply_frequency_removal(data, compression_percent=0.25):
         Returns:
             f_prop_shift (np.array): high frequencies
         """
-        for i in range(h):
-            for j in range(w):
-                if ((i - h / 2) / (h / 2)) ** 2 + ((j - w / 2) / (w / 2)) ** 2 > compression_percent:
-                    f_prop_shift[i,j] = 0
-
+        mags = np.abs(f_prop_shift)
+        thresh = np.percentile(mags, compression_percent)
+        cond = np.abs(f_prop_shift) < thresh
+        f_prop_shift[cond] = 0
         return f_prop_shift
 
     new_data = np.copy(data)
