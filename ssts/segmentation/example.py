@@ -91,6 +91,9 @@ def main(data_path=None, example_number=None):
         # Plot classification distributions of PCA components
         mm.show_classification_distributions(pre_labels, pca_components, title_flag=False)
 
+        # Show correlation after classification of PCA components
+        mm.show_classification_correlation(pre_labels, pca_components, title_flag=False)
+
         # Create unique masks per grain
         post_labels = seg.get_grains(pre_labels)
 
@@ -206,6 +209,9 @@ def main(data_path=None, example_number=None):
         seg1 = seg_gmm.SegmenterGMM(n_components=2)
         seg1_labels = seg1.fit_transform(data, outliers)
 
+        # Show correlation after classification
+        mm.show_classification_correlation(seg1_labels, no_outliers_data)
+
         # Remove height property (optional)
         #no_height_data = np.delete(no_outliers_data, 4, axis=2)
         #seg1_labels = seg1.fit_transform(no_height_data, outliers)
@@ -229,3 +235,4 @@ def main(data_path=None, example_number=None):
 
 if __name__ == "__main__":
     main()
+
