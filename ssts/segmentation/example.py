@@ -206,7 +206,7 @@ def main(data_path=None, example_number=None):
         mm.show_property_distributions(data, outliers)
 
         # Run GMM segmentation
-        seg1 = seg_gmm.SegmenterGMM(n_components=2)
+        seg1 = seg_gmm.SegmenterGMM(n_components=2, nonlinear=True)
         seg1_labels = seg1.fit_transform(data, outliers)
 
         # Show correlation after classification

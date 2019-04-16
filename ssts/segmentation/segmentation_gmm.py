@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 
 class SegmenterGMM(object):
-    def __init__(self, n_components=3, normalize=True, embedding_dim=None, padding=0, zscale=False):
+    def __init__(self, n_components=3, normalize=True, embedding_dim=None, padding=0, zscale=False, nonlinear=False):
         """
         Perform material segmentation using a Gaussian Mixture Model. Various ways of building features
         and performing dimensionality reduction are provided. If `padding` is set greater than zero, local
@@ -29,12 +29,14 @@ class SegmenterGMM(object):
             padding (int): Padding used in sliding window. When set to zero, no neighbor information
                 will be used. The neighbor values are flattened and fed into the PCA routine.
             zscale (bool): Whether to use z-score scaling (True) or scale by property maxima (False).
+            nonlinear (bool): Whether to add nonlinear features (True) or not (False).
         """
         self.normalize = normalize
         self.embedding_dim = embedding_dim
         self.n_components = n_components
         self.padding = padding
         self.zscale = zscale
+        self.nonlinear = nonlinear
 
         self.gmm = None
         self.pca = None
@@ -59,6 +61,9 @@ class SegmenterGMM(object):
         if outliers is not None and len(outliers.shape) != 2:
             logger.warning("Outlier arrays must be of shape (height, width).")
             return None
+
+        if self.nonlinear:
+            data = SegmenterGMM.add_nonlinear_features(data)
 
         h, w, c = data.shape
         n = h * w
@@ -105,6 +110,9 @@ class SegmenterGMM(object):
         if self.gmm is None:
             logger.warning("Attempting to transform prior to fitting. You must call .fit() first.")
             return None
+
+        if self.nonlinear:
+            data = SegmenterGMM.add_nonlinear_features(data)
 
         h, w, c = data.shape
         n = h * w
@@ -181,6 +189,14 @@ class SegmenterGMM(object):
         vector_probs = self.gmm.predict_proba(data)
         probs = vector_probs.reshape(h, w, self.n_components)
         return probs
+
+    @staticmethod
+    def add_nonlinear_features(data):
+        abs_data = np.abs(data)
+        squared_data = data ** 2
+        cubed_data = data ** 3
+        reciprocal_data = 1 / data
+        return np.concatenate((data, abs_data, squared_data, cubed_data, reciprocal_data), axis=2)
 
     @staticmethod
     def remove_outliers(data, outliers):

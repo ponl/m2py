@@ -567,7 +567,7 @@ def show_classification_correlation(labels, data, title_flag=True):
                 ax.set_ylabel(f"PCA component {index_j + 1}")
 
             cnt += 1
-            title = ""
+            title = f"Correlation: "
             for index, l in enumerate(grain_labels):
                 data_i = data[:, :, index_i][labels == l]
                 data_i = data_i / np.max(np.abs(data_i))
@@ -577,7 +577,7 @@ def show_classification_correlation(labels, data, title_flag=True):
 
                 color_step = num_labels - (index + 1)
                 ax.scatter(data_i, data_j, color=cmap(color_step), alpha=0.2)
-                title += f"Correlation: {np.round(corr, 3)} "
+                title += f"{np.round(corr, 3)} "
 
             ax.set_title(title)
 
