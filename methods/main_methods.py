@@ -534,7 +534,7 @@ def show_overlaid_distribution(probs, data):
     pyplot.show()
 
 
-def show_classification_correlation(labels, data, title_flag=True):
+def show_classification_correlation(labels, data, title_flag=True, sample_flag=True):
     """ Plots the correlation of data properties after classification
     Args:
         data (np array): data
@@ -570,10 +570,16 @@ def show_classification_correlation(labels, data, title_flag=True):
             title = f"Correlation: "
             for index, l in enumerate(grain_labels):
                 data_i = data[:, :, index_i][labels == l]
-                data_i = data_i / np.max(np.abs(data_i))
+                data_i /= np.max(np.abs(data_i))
                 data_j = data[:, :, index_j][labels == l]
-                data_j = data_j / np.max(np.abs(data_j))
+                data_j /= np.max(np.abs(data_j))
                 corr = np.corrcoef(data_i, data_j)[0, 1]
+
+                if sample_flag:
+                    indices = np.arange(data_i.shape[0])
+                    sampling = np.random.choice(indices, size=1000, replace=False)
+                    data_i = np.take(data_i, sampling)
+                    data_j = np.take(data_j, sampling)
 
                 color_step = num_labels - (index + 1)
                 ax.scatter(data_i, data_j, color=cmap(color_step), alpha=0.2)
