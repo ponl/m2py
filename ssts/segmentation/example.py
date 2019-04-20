@@ -15,9 +15,10 @@ def main(data_path=None, example_number=None):
         args = p.parse_args()
 
     example_number = args.example_number
-    data_dir = args.data_path
-    data_type = data_dir.split("/")[-3]
-    data = np.load(data_dir)
+    data_file = args.data_path
+    data_type = data_file.split("/")[-3]
+    data_dir = "/".join(data_file.split("/")[:-1])
+    data = np.load(data_file)
 
     ## NOTE Segmentation example without using outliers
     if example_number == "0":
@@ -227,6 +228,10 @@ def main(data_path=None, example_number=None):
 
         # Plot grain classification
         mm.show_classification(seg2_labels, no_outliers_data)
+
+    # NOTE A-priori correlation analysis
+    elif example_number == "8": # NOTE this looks better the more data files in the dir
+        mm.show_correlations(data.shape[2], data_dir)
 
     ## NOTE Not valid example numbers
     else:
