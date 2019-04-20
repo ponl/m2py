@@ -111,22 +111,8 @@ class SegmenterGMM(object):
             logger.warning("Attempting to transform prior to fitting. You must call .fit() first.")
             return None
 
-        if self.nonlinear:
-            data = SegmenterGMM.add_nonlinear_features(data)
-
         h, w, c = data.shape
-        n = h * w
-
-        if self.padding > 0:
-            data = SegmenterGMM.get_windows(data, padding=self.padding)
-        else:
-            data = data.reshape(n, c)
-
-        if self.normalize:
-            data = self.sst.transform(data) if self.zscale else SegmenterGMM.normalize_by_max(data)
-
-        if self.embedding_dim is not None:
-            data = self.pca.transform(data)
+        data = self.get_pca_components(data)
 
         labels = self.gmm.predict(data)
         labels = np.reshape(labels, (h, w))
@@ -156,6 +142,39 @@ class SegmenterGMM(object):
 
         return self.transform(data, outliers)
 
+    def get_pca_components(self, data):
+        """
+        Gathers PCA components.
+
+        Args:
+            data (NumPy Array): Material properties array of shape (height, width, n_properties)
+
+        Returns:
+            pca_components (NumPy Array): PCA components array of shape (height * width, embedding_dim)
+        """
+        if self.gmm is None:
+            logger.warning("Attempting to access model prior to fitting. You must call .fit() first.")
+            return None
+
+        if self.nonlinear:
+            data = SegmenterGMM.add_nonlinear_features(data)
+
+        h, w, c = data.shape
+        n = h * w
+
+        if self.padding > 0:
+            data = SegmenterGMM.get_windows(data, padding=self.padding)
+        else:
+            data = data.reshape(n, c)
+
+        if self.normalize:
+            data = self.sst.transform(data) if self.zscale else SegmenterGMM.normalize_by_max(data)
+
+        if self.embedding_dim is not None:
+            pca_components = self.pca.transform(data)
+
+        return pca_components
+
     def get_probabilities(self, data, outliers=None):
         """
         Computes likelihood of pixel for all classes.
@@ -173,18 +192,7 @@ class SegmenterGMM(object):
             return None
 
         h, w, c = data.shape
-        n = h * w
-
-        if self.padding > 0:
-            data = SegmenterGMM.get_windows(data, padding=self.padding)
-        else:
-            data = data.reshape(n, c)
-
-        if self.normalize:
-            data = self.sst.transform(data) if self.zscale else SegmenterGMM.normalize_by_max(data)
-
-        if self.embedding_dim is not None:
-            data = self.pca.transform(data)
+        data = self.get_pca_components(data)
 
         vector_probs = self.gmm.predict_proba(data)
         probs = vector_probs.reshape(h, w, self.n_components)
