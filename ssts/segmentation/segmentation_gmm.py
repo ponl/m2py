@@ -171,8 +171,9 @@ class SegmenterGMM(object):
             data = self.sst.transform(data) if self.zscale else SegmenterGMM.normalize_by_max(data)
 
         if self.embedding_dim is not None:
-            pca_components = self.pca.transform(data)
+            data = self.pca.transform(data)
 
+        pca_components = data
         return pca_components
 
     def get_probabilities(self, data, outliers=None):

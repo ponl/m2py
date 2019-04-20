@@ -576,7 +576,8 @@ def show_classification_correlation(labels, data, title_flag=True, sample_flag=T
 
                 if sample_flag:
                     indices = np.arange(data_i.shape[0])
-                    sampling = np.random.choice(indices, size=1000, replace=False)
+                    sample_size = min(1000, len(indices))
+                    sampling = np.random.choice(indices, size=sample_size, replace=False)
                     data_i = np.take(data_i, sampling)
                     data_j = np.take(data_j, sampling)
 
