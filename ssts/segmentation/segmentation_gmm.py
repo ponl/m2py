@@ -205,6 +205,7 @@ class SegmenterGMM(object):
         squared_data = data ** 2
         cubed_data = data ** 3
         reciprocal_data = 1 / data
+        reciprocal_data[data == 0] = 0
         return np.concatenate((data, abs_data, squared_data, cubed_data, reciprocal_data), axis=2)
 
     @staticmethod
