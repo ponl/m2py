@@ -1,8 +1,8 @@
 import argparse
 
 import numpy as np
-import segmentation_gmm as seg_gmm
-import segmentation_watershed as seg_water
+import ssts.segmentation.segmentation_gmm as seg_gmm
+import ssts.segmentation.segmentation_watershed as seg_water
 from methods import main_methods as mm  # NOTE SSTS directory must be in PYTHONPATH
 
 def main(data_path=None, example_number=None):
