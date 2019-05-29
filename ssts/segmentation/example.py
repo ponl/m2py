@@ -5,6 +5,8 @@ import ssts.segmentation.segmentation_gmm as seg_gmm
 import ssts.segmentation.segmentation_watershed as seg_water
 from methods import main_methods as mm  # NOTE SSTS directory must be in PYTHONPATH
 
+Z_SCORE_THRESH = 2.5
+
 def main(data_path=None, example_number=None):
     if data_path is not None and example_number is not None:
         args = argparse.Namespace(data_path=data_path, example_number=example_number)
@@ -43,8 +45,9 @@ def main(data_path=None, example_number=None):
     elif example_number == "1":
 
         # Get outliers
-        outliers = mm.extract_outliers(data)
+        outliers = mm.extract_outliers(data, threshold=Z_SCORE_THRESH)
         mm.show_outliers(data, outliers)
+        no_outliers_data = mm.smooth_outliers_from_data(data, outliers)
 
         # Shows a-priori property distributions
         mm.show_property_distributions(data, outliers)
@@ -56,7 +59,6 @@ def main(data_path=None, example_number=None):
         labels = seg.fit_transform(data, outliers)
 
         # Plot classification without outliers
-        no_outliers_data = mm.smooth_outliers_from_data(data, outliers)
         mm.show_classification(labels, no_outliers_data)  # uses data without outliers
 
         # Plot classification distribution
@@ -111,7 +113,8 @@ def main(data_path=None, example_number=None):
     elif example_number == "3":
 
         # Get outliers
-        outliers = mm.extract_outliers(data)
+        outliers = mm.extract_outliers(data, threshold=Z_SCORE_THRESH)
+        no_outliers_data = mm.smooth_outliers_from_data(data, outliers)
 
         # Initialize GMM segmentation # TODO need to optimize these parameters
         seg = seg_gmm.SegmenterGMM(n_components=3, padding=3, embedding_dim=10, zscale=True)
@@ -120,7 +123,6 @@ def main(data_path=None, example_number=None):
         labels = seg.fit_transform(data, outliers)
 
         # Plot classification without outliers
-        no_outliers_data = mm.smooth_outliers_from_data(data, outliers)
         mm.show_classification(labels, no_outliers_data)
 
         # Plot classification distributions
@@ -133,7 +135,7 @@ def main(data_path=None, example_number=None):
     elif example_number == "4":
 
         # Get outliers
-        outliers = mm.extract_outliers(data)
+        outliers = mm.extract_outliers(data, threshold=Z_SCORE_THRESH)
 
         # Initialize GMM segmentation
         seg = seg_water.SegmenterWatershed()
@@ -154,7 +156,8 @@ def main(data_path=None, example_number=None):
     elif example_number == "5":
 
         # Get outliers
-        outliers = mm.extract_outliers(data)
+        outliers = mm.extract_outliers(data, threshold=Z_SCORE_THRESH)
+        no_outliers_data = mm.smooth_outliers_from_data(data, outliers)
 
         # Initialize GMM segmentation
         seg = seg_gmm.SegmenterGMM(n_components=2, embedding_dim=3)
@@ -166,10 +169,10 @@ def main(data_path=None, example_number=None):
         labels = seg.fit_transform(no_height_data, outliers)
 
         # Plot classification
-        mm.show_classification(labels, data)
+        mm.show_classification(labels, no_outliers_data)
 
         # Plot classification distributions
-        mm.show_classification_distributions(labels, data)
+        mm.show_classification_distributions(labels, no_outliers_data)
 
     ## NOTE Segmentation example with dimensionality reduction (PCA) across physical properties (skinny version of example 2)
     elif example_number == "6":
@@ -196,10 +199,9 @@ def main(data_path=None, example_number=None):
         data = mm.apply_frequency_removal(data)
 
         # Extract outliers
-        outliers = mm.extract_outliers(data)
-        no_outliers_data = np.copy(data)
-        no_outliers_data[outliers==1] = 0
+        outliers = mm.extract_outliers(data, threshold=Z_SCORE_THRESH)
         mm.show_outliers(data, outliers)
+        no_outliers_data = mm.smooth_outliers_from_data(data, outliers)
 
         # Show a-priori distributions
         mm.show_property_distributions(data, outliers)
