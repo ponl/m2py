@@ -222,7 +222,7 @@ class SegmenterGMM(object):
         n = 2 * padding + 1
         wins = np.zeros((h * w, n ** 2, c))
         for d in range(c):
-            X = np.pad(data[:, :, d], padding, "constant")
+            X = np.pad(data[:, :, d], padding, "reflect")
             idx = 0
             for i in range(padding, h + padding):
                 for j in range(padding, w + padding):
