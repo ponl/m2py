@@ -121,7 +121,7 @@ def smooth_outliers_from_data(data, outliers):
 
 ## Frequency removal
 def apply_frequency_removal(data, compression_percent=95):
-    """ Removes low frequencies from data
+    """ Removes small-magnitude frequencies from data
     Args:
         data (np array): data
         compression_percent (float): percentage of compression
@@ -129,8 +129,8 @@ def apply_frequency_removal(data, compression_percent=95):
         new_data (np array): compressed data
     """
 
-    def remove_low_freqs(f_prop_shift, h, w, compression_percent):
-        """ Removes low frequencies in Fourier space
+    def remove_small_magnitude_freqs(f_prop_shift, h, w, compression_percent):
+        """ Removes small-magnitude frequencies in Fourier space
         Args:
             f_prop_shift (np.array): frequencies
             h (int): height of data array
@@ -164,11 +164,11 @@ def apply_frequency_removal(data, compression_percent=95):
 
         f_prop = fft2(prop)
         f_prop_shift = fftshift(f_prop)
-        f_prop_shift = remove_low_freqs(f_prop_shift, h, w, compression_percent)
+        f_prop_shift = remove_small_magnitude_freqs(f_prop_shift, h, w, compression_percent)
 
         pyplot.subplot(num_rows, num_cols, count)
         pyplot.imshow(np.abs(f_prop_shift), norm=colors.LogNorm(vmin=np.mean(np.abs(f_prop_shift))))
-        pyplot.title("High Frequencies")
+        pyplot.title("Large-Magnitude Frequencies")
         count += 1
 
         f_prop = ifftshift(f_prop_shift)
