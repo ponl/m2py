@@ -56,8 +56,7 @@ def main(data_path=None, example_number=None):
         labels = seg.fit_transform(data, outliers)
 
         # Plot classification without outliers
-        no_outliers_data = np.copy(data)
-        no_outliers_data[outliers == 1] = 0  # remove outliers from data
+        no_outliers_data = mm.smooth_outliers_from_data(data, outliers)
         mm.show_classification(labels, no_outliers_data)  # uses data without outliers
 
         # Plot classification distribution
@@ -121,8 +120,7 @@ def main(data_path=None, example_number=None):
         labels = seg.fit_transform(data, outliers)
 
         # Plot classification without outliers
-        no_outliers_data = np.copy(data)
-        no_outliers_data[outliers == 1] = 0  # remove outliers from data
+        no_outliers_data = mm.smooth_outliers_from_data(data, outliers)
         mm.show_classification(labels, no_outliers_data)
 
         # Plot classification distributions

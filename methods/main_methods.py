@@ -91,14 +91,32 @@ def show_outliers(data, outliers, height_index=HEIGHT_INDEX):
     pyplot.title("Height Outliers")
 
     no_outliers_data = np.copy(data)
-    no_outliers_data[outliers == 1] = 0
+    height_data = no_outliers_data[:, :, height_index]
+    height_data[outliers == 1] = np.mean(height_data)
     pyplot.subplot(1, 3, 3)
-    m = pyplot.imshow(no_outliers_data[:, :, height_index], aspect="auto")
+    m = pyplot.imshow(height_data, aspect="auto")
     pyplot.title("Height")
     pyplot.colorbar(m, fraction=0.046, pad=0.04)
 
     pyplot.tight_layout()
     pyplot.show()
+
+
+def smooth_outliers_from_data(data, outliers):
+    """ Replaces outliers from each channel of data with their mean.
+    Args:
+        data (np array): data
+        outliers (np array): outliers
+    Returns:
+        no_outliers_data (np.array): data with outlier values replaced
+    """
+    h, w, c = data.shape
+
+    no_outliers_data = np.copy(data)
+    for i in range(c):
+        no_outliers_data[:, :, i][outliers == 1] = np.mean(no_outliers_data[:, :, i])
+
+    return no_outliers_data
 
 
 ## Frequency removal
