@@ -1,16 +1,13 @@
 import logging
 
 import numpy as np
-from skimage import measure
-import matplotlib.pyplot as plt
 from scipy.signal import convolve2d
-import persistence_watershed_algorithm as pws
+import ssts.segmentation.persistence_watershed_algorithm as pws
 from methods import main_methods as mm  # NOTE SSTS directory must be in PYTHONPATH
 
 logger = logging.getLogger(__name__)
 
 DEF_THRESH = 0.5
-LABEL_THRESH = mm.LABEL_THRESH
 
 
 class SegmenterWatershed(object):
@@ -25,7 +22,7 @@ class SegmenterWatershed(object):
 
         self.pws = None
 
-    def fit(self, data):
+    def fit(self, data, pers_thresh=DEF_THRESH):
         """
         Performs Persistence Watershed segmentation on selected material property.
 
@@ -44,7 +41,7 @@ class SegmenterWatershed(object):
             data = SegmenterWatershed.smooth_data(data)
 
         self.pws = pws.PersistenceWatershed(data)
-        self.pws.train()
+        self.pws.train(pers_thresh)
 
     def transform(self, data, outliers=None, pers_thresh=DEF_THRESH):  # NOTE need data as input to use as GMM Segmenter
         """
@@ -70,7 +67,6 @@ class SegmenterWatershed(object):
             data = SegmenterWatershed.smooth_data(data)
 
         labels = self.pws.apply_threshold(pers_thresh)
-        labels = measure.label(labels, connectivity=2, background=0)  # creates unique labels
         if outliers is not None:
             labels *= 1 - outliers  # outliers map to label 0 which are borders between grains
 
@@ -89,7 +85,7 @@ class SegmenterWatershed(object):
             (Numpy Array): The segmented array of shape (height, width). Each pixel receives
                 a label corresponding to its segment.
         """
-        self.fit(data)
+        self.fit(data, pers_thresh)
         if self.pws is None:
             logger.warning("Failed to fit model.")
             return None
@@ -107,27 +103,4 @@ class SegmenterWatershed(object):
         smoothing_matrix[center, center] = 2
         smoothing_matrix /= np.sum(smoothing_matrix)
         return convolve2d(data, smoothing_matrix, mode="same")
-
-    def find_optimal_thresh(self, data, outliers=None, n=50, plot_flag=False):
-        """ Finds optimal merging threshold """
-        num_grains = []
-        thresholds = np.linspace(0, 1, n)
-        for thresh in thresholds:
-            labels = self.transform(data, outliers, thresh)
-            unique_labels = mm.get_unique_labels(labels)
-            grain_labels = [l for l in unique_labels if np.sum(labels == l) > LABEL_THRESH]
-            num_grains.append(len(grain_labels))
-
-        persistent_value = int(np.median(num_grains))
-        optimal_index = num_grains.index(persistent_value)
-        optimal_thresh = thresholds[optimal_index]
-
-        if plot_flag:
-            plt.figure()
-            plt.plot(thresholds, num_grains, "r")
-            plt.plot(thresholds, num_grains, "ko")
-            plt.grid()
-            plt.show()
-
-        return optimal_thresh
 

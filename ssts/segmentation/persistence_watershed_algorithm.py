@@ -14,7 +14,7 @@ class PersistenceWatershed(object):
         self.maxes = {}
         self.mt = None
 
-    def train(self):
+    def train(self, pers_thresh):
         rank = np.argsort(self.arr.flatten())
         for r in rank[::-1]:
             p = np.unravel_index(r, self.dim)
@@ -55,7 +55,7 @@ class PersistenceWatershed(object):
             for n1 in self.dual[n0]:
                 edges.append((n0, n1, self.dual[n0][n1]))
 
-        self.mt = PersistenceWatershed.merge_tree(self.maxes, edges)
+        self.mt = PersistenceWatershed.merge_tree(self.maxes, edges, pers_thresh)
 
     def apply_threshold(self, t):
         # Build relabel dictionary
@@ -117,7 +117,7 @@ class PersistenceWatershed(object):
         return u
 
     @staticmethod
-    def merge_tree(maxima, edges):
+    def merge_tree(maxima, edges, pers_thresh):
         # maxima=(label, max value of label in data)
         # edges=(label1, label2, max value of boundary in data)
         pairs = []
@@ -141,8 +141,11 @@ class PersistenceWatershed(object):
             if values[vc] < values[uc]:  # if later label has lower max
                 uc, vc = vc, uc
 
-            # source, target, persistence (size of lower label hill)
-            pairs.append((uc, vc, values[uc] - val))
-            components[uc] = components[vc]  # lower label maps to higher label
+            pairs.append((uc, vc, values[uc] - val)) # source, target, persistence (size of lower label hill)
+
+            # NOTE without this constraint, artifacts appear in the output plot
+            if (values[uc] - val) < pers_thresh:
+                components[uc] = components[vc]  # lower label maps to higher label
 
         return pairs
+

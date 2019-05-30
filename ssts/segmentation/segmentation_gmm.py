@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 
 class SegmenterGMM(object):
-    def __init__(self, n_components=3, normalize=True, embedding_dim=None, padding=0, zscale=False):
+    def __init__(self, n_components=3, normalize=True, embedding_dim=None, padding=0, zscale=False, nonlinear=False):
         """
         Perform material segmentation using a Gaussian Mixture Model. Various ways of building features
         and performing dimensionality reduction are provided. If `padding` is set greater than zero, local
@@ -29,12 +29,14 @@ class SegmenterGMM(object):
             padding (int): Padding used in sliding window. When set to zero, no neighbor information
                 will be used. The neighbor values are flattened and fed into the PCA routine.
             zscale (bool): Whether to use z-score scaling (True) or scale by property maxima (False).
+            nonlinear (bool): Whether to add nonlinear features (True) or not (False).
         """
         self.normalize = normalize
         self.embedding_dim = embedding_dim
         self.n_components = n_components
         self.padding = padding
         self.zscale = zscale
+        self.nonlinear = nonlinear
 
         self.gmm = None
         self.pca = None
@@ -59,6 +61,9 @@ class SegmenterGMM(object):
         if outliers is not None and len(outliers.shape) != 2:
             logger.warning("Outlier arrays must be of shape (height, width).")
             return None
+
+        if self.nonlinear:
+            data = SegmenterGMM.add_nonlinear_features(data)
 
         h, w, c = data.shape
         n = h * w
@@ -99,26 +104,15 @@ class SegmenterGMM(object):
             outliers (NumPy Array): Binary array indicating outliers of shape (height, width)
 
         Returns:
-            labels (NumPy Array): The segmented array. Each pixel receives
-                a label corresponding to its segment, of shape (height, width).
+            labels (NumPy Array): The segmented array of shape (height, width). Each pixel receives
+                a label corresponding to its segment.
         """
         if self.gmm is None:
             logger.warning("Attempting to transform prior to fitting. You must call .fit() first.")
             return None
 
         h, w, c = data.shape
-        n = h * w
-
-        if self.padding > 0:
-            data = SegmenterGMM.get_windows(data, padding=self.padding)
-        else:
-            data = data.reshape(n, c)
-
-        if self.normalize:
-            data = self.sst.transform(data) if self.zscale else SegmenterGMM.normalize_by_max(data)
-
-        if self.embedding_dim is not None:
-            data = self.pca.transform(data)
+        data = self.get_pca_components(data)
 
         labels = self.gmm.predict(data)
         labels = np.reshape(labels, (h, w))
@@ -138,8 +132,8 @@ class SegmenterGMM(object):
             outliers (NumPy Array): Binary array indicating outliers of shape (height, width)
 
         Returns:
-            labels (NumPy Array): The segmented array. Each pixel receives
-                a label corresponding to its segment, of shape (height, width).
+            labels (NumPy Array): The segmented array of shape (height, width). Each pixel receives
+                a label corresponding to its segment.
         """
         gmm = self.fit(data, outliers)
 
@@ -147,6 +141,72 @@ class SegmenterGMM(object):
             return None
 
         return self.transform(data, outliers)
+
+    def get_pca_components(self, data):
+        """
+        Gathers PCA components.
+
+        Args:
+            data (NumPy Array): Material properties array of shape (height, width, n_properties)
+
+        Returns:
+            pca_components (NumPy Array): PCA components array of shape (height * width, embedding_dim)
+        """
+        if self.gmm is None:
+            logger.warning("Attempting to access model prior to fitting. You must call .fit() first.")
+            return None
+
+        if self.nonlinear:
+            data = SegmenterGMM.add_nonlinear_features(data)
+
+        h, w, c = data.shape
+        n = h * w
+
+        if self.padding > 0:
+            data = SegmenterGMM.get_windows(data, padding=self.padding)
+        else:
+            data = data.reshape(n, c)
+
+        if self.normalize:
+            data = self.sst.transform(data) if self.zscale else SegmenterGMM.normalize_by_max(data)
+
+        if self.embedding_dim is not None:
+            data = self.pca.transform(data)
+
+        pca_components = data
+        return pca_components
+
+    def get_probabilities(self, data, outliers=None):
+        """
+        Computes likelihood of pixel for all classes.
+
+        Args:
+            data (NumPy Array): Material properties array of shape (height, width, n_properties)
+            outliers (NumPy Array): Binary array indicating outliers of shape (height, width)
+
+        Returns:
+            probs (NumPy Array): The array of probabilities of shape (height, width, num_components).
+                Each pixel receives a probability per class.
+        """
+        if self.gmm is None:
+            logger.warning("Attempting to access model prior to fitting. You must call .fit() first.")
+            return None
+
+        h, w, c = data.shape
+        data = self.get_pca_components(data)
+
+        vector_probs = self.gmm.predict_proba(data)
+        probs = vector_probs.reshape(h, w, self.n_components)
+        return probs
+
+    @staticmethod
+    def add_nonlinear_features(data):
+        abs_data = np.abs(data)
+        squared_data = data ** 2
+        cubed_data = data ** 3
+        reciprocal_data = 1 / data
+        reciprocal_data[data == 0] = 0
+        return np.concatenate((data, abs_data, squared_data, cubed_data, reciprocal_data), axis=2)
 
     @staticmethod
     def remove_outliers(data, outliers):
@@ -162,7 +222,7 @@ class SegmenterGMM(object):
         n = 2 * padding + 1
         wins = np.zeros((h * w, n ** 2, c))
         for d in range(c):
-            X = np.pad(data[:, :, d], padding, "constant")
+            X = np.pad(data[:, :, d], padding, "symmetric")
             idx = 0
             for i in range(padding, h + padding):
                 for j in range(padding, w + padding):
