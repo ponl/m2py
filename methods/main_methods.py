@@ -464,8 +464,8 @@ def show_grain_area_distribution(labels, data_type, data_subtype=None):
     pyplot.plot(physical_sig_areas, "ro")
     pyplot.plot(physical_sig_areas, "b")
     pyplot.xlabel("Grain")
-    pyplot.ylabel("Grain area (mum2)")
-    pyplot.title("Grain Area (mum2)")
+    pyplot.ylabel("Grain area (um2)")
+    pyplot.title("Grain Area (um2)")
     pyplot.grid()
 
     pyplot.show()
