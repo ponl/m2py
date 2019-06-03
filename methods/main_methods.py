@@ -8,9 +8,7 @@ from sklearn.mixture import GaussianMixture
 from scipy.fftpack import fft2, ifft2, fftshift, ifftshift
 from methods import config
 
-PROPS = config.data_properties
-HEIGHT_INDEX = config.height_index
-SAMPLE_SIZE = {"backgrounded": 2, "2componentfilms": 0.5, "nanowires": 5}  # micro-meters
+INFO = config.data_info
 
 LABEL_THRESH = 1000  # each label must have more than this number of pixels
 
@@ -20,12 +18,15 @@ NUM_BINS = 30
 NUM_COLS = 2  # number of cols in plots
 
 ## Properties Distributions
-def show_property_distributions(data, outliers=None):
+def show_property_distributions(data, data_type, outliers=None):
     """ Plots the pdfs of the data properties before classification
     Args:
         data (np array): data
+        data_type (srt): data type (QNM, AMFM, cAFM)
         outliers (np array): outliers
     """
+    props = INFO[data_type]["properties"]
+
     h, w, c = data.shape
     num_plots = c
     num_cols = NUM_COLS
@@ -41,22 +42,28 @@ def show_property_distributions(data, outliers=None):
         pyplot.subplot(num_rows, num_cols, j + 1)
         pyplot.hist(x, NUM_BINS, alpha=ALPHA, density=True)
         pyplot.grid()
-        pyplot.title(PROPS[j])
+        pyplot.title(props[j])
 
     pyplot.tight_layout()
     pyplot.show()
 
 
 ## Outlier Detection
-def extract_outliers(data, height_index=HEIGHT_INDEX, threshold=2.5):
+def extract_outliers(data, data_type, threshold=2.5):
     """ Finds outliers from data
     Args:
         data (np array): data
-        height_index (int): index of height property
+        data_type (srt): data type (QNM, AMFM, cAFM)
         threshold: (float): z-score threshold
     Returns:
         (np array): boolean matrix denoting outliers
     """
+    props = INFO[data_type]["properties"]
+    if "Height" in props:
+        height_index = props.index("Height")
+    else:
+        return None
+
     x = data[:, :, height_index]
 
     # Smooth data
@@ -72,13 +79,19 @@ def extract_outliers(data, height_index=HEIGHT_INDEX, threshold=2.5):
     return z > threshold
 
 
-def show_outliers(data, outliers, height_index=HEIGHT_INDEX):
+def show_outliers(data, data_type, outliers):
     """ Plots data properties and outliers
     Args:
         data (np array): data
+        data_type (srt): data type (QNM, AMFM, cAFM)
         outliers (np array): outliers
-        height_index (int): index of height property
     """
+    props = INFO[data_type]["properties"]
+    if "Height" in props:
+        height_index = props.index("Height")
+    else:
+        return
+
     fig = pyplot.figure(figsize=(15, 4))
 
     pyplot.subplot(1, 3, 1)
@@ -120,10 +133,11 @@ def smooth_outliers_from_data(data, outliers):
 
 
 ## Frequency removal
-def apply_frequency_removal(data, compression_percent=95):
+def apply_frequency_removal(data, data_type, compression_percent=95):
     """ Removes small-magnitude frequencies from data
     Args:
         data (np array): data
+        data_type (srt): data type (QNM, AMFM, cAFM)
         compression_percent (float): percentage of compression
     Returns:
         new_data (np array): compressed data
@@ -145,6 +159,8 @@ def apply_frequency_removal(data, compression_percent=95):
         f_prop_shift[cond] = 0
         return f_prop_shift
 
+    props = INFO[data_type]["properties"]
+
     new_data = np.copy(data)
 
     h, w, c = data.shape
@@ -158,7 +174,7 @@ def apply_frequency_removal(data, compression_percent=95):
         prop = data[:, :, k]
 
         pyplot.subplot(num_rows, num_cols, count)
-        pyplot.title(PROPS[k])
+        pyplot.title(props[k])
         pyplot.imshow(prop)
         count += 1
 
@@ -175,7 +191,7 @@ def apply_frequency_removal(data, compression_percent=95):
         high_prop = np.real(ifft2(f_prop))
 
         pyplot.subplot(num_rows, num_cols, count)
-        pyplot.title(PROPS[k])
+        pyplot.title(props[k])
         pyplot.imshow(high_prop)
         count += 1
 
@@ -269,12 +285,15 @@ def get_correlation_values(cors, r, c):
 
 
 # TODO use with many data files
-def show_correlations(num_props, path):
+def show_correlations(num_props, data_type, path):
     """ Plots correlations between all properties
     Args:
         num_props (int): number of properties
+        data_type (srt): data type (QNM, AMFM, cAFM)
         path (str): data directory
     """
+    props = INFO[data_type]["properties"]
+
     cors = get_correlations(path)
 
     fig = pyplot.figure(figsize=(20, 30))
@@ -284,7 +303,7 @@ def show_correlations(num_props, path):
     for i in range(num_props):
         for j in range(num_props):
             pyplot.subplot(num_props, num_props, cnt)
-            pyplot.title(f"{PROPS[i]} -- {PROPS[j]}", fontsize=11)
+            pyplot.title(f"{props[i]} -- {props[j]}", fontsize=11)
             if i == j:  # skip auto-correlation
                 pyplot.xlabel("Correlation")
                 pyplot.xlim(-1, 1)
@@ -318,12 +337,15 @@ def get_unique_labels(labels):
 
 
 ## Plotting methods
-def show_classification(labels, data):
+def show_classification(labels, data, data_type):
     """ Shows classification of pixels after segmentation
     Args:
         labels (np.array): matrix of classification per pixel
         data (np.array): data
+        data_type (srt): data type (QNM, AMFM, cAFM)
     """
+    props = INFO[data_type]["properties"]
+
     unique_labels = get_unique_labels(labels)
     grain_labels = [l for l in unique_labels if np.sum(labels == l) > LABEL_THRESH]
     num_labels = len(grain_labels)
@@ -339,7 +361,7 @@ def show_classification(labels, data):
     for i in range(c):
         ax_l = pyplot.subplot(num_rows, num_cols, cnt)
         cnt += 1
-        ax_l.set_title(PROPS[i])
+        ax_l.set_title(props[i])
         m = ax_l.imshow(data[:, :, i])
         pyplot.colorbar(m, fraction=0.046, pad=0.04)
 
@@ -357,13 +379,16 @@ def show_classification(labels, data):
     pyplot.show()
 
 
-def show_classification_distributions(labels, data, title_flag=True):
+def show_classification_distributions(labels, data, data_type, title_flag=True):
     """ Shows distributions of classes after segmentation
     Args:
         labels (np.array): matrix of classification per pixel
         data (np.array): data
+        data_type (srt): data type (QNM, AMFM, cAFM)
         title_flag (bool): to show titles or not
     """
+    props = INFO[data_type]["properties"]
+
     unique_labels = get_unique_labels(labels)
     grain_labels = [l for l in unique_labels if np.sum(labels == l) > LABEL_THRESH]
     num_labels = len(grain_labels)
@@ -380,7 +405,7 @@ def show_classification_distributions(labels, data, title_flag=True):
         ax_l = pyplot.subplot(num_rows, num_cols, cnt)
         cnt += 1
         if title_flag:
-            ax_l.set_title(PROPS[i])
+            ax_l.set_title(props[i])
         else:
             ax_l.set_title(f"PCA component {index_i + 1}")
 
@@ -399,13 +424,17 @@ def show_classification_distributions(labels, data, title_flag=True):
     pyplot.show()
 
 
-def show_grain_area_distribution(labels, data_type):
+def show_grain_area_distribution(labels, data_type, data_subtype=None):
     """ Computes a histogram of the number of pixels per label
     Args:
         labels (np.array): matrix of classification per pixel
-        data_type (str): type of data such as 2component or backgrounded
+        data_type (str): data type (QNM, AMFM, cAFM)
+        data_subtype (str): data subtype (backgrounded, nanowires)
     """
-    sample_area = SAMPLE_SIZE[data_type] ** 2
+    if data_subtype is None:
+        sample_area = INFO[data_type]["sample_size"] ** 2
+    else:
+        sample_area = INFO[data_type]["sample_size"][data_subtype] ** 2
 
     unique_labels = get_unique_labels(labels)
     grain_areas = [np.sum(labels == l) for l in unique_labels]
@@ -442,12 +471,15 @@ def show_grain_area_distribution(labels, data_type):
     pyplot.show()
 
 
-def show_distributions_together(labels, data):
+def show_distributions_together(labels, data, data_type):
     """ Shows distributions of classes after segmentation
     Args:
         labels (np.array): matrix of classification per pixel
         data (np.array): data
+        data_type (srt): data type (QNM, AMFM, cAFM)
     """
+    props = INFO[data_type]["properties"]
+
     unique_labels = get_unique_labels(labels)
     grain_labels = [l for l in unique_labels if np.sum(labels == l) > LABEL_THRESH]
     num_labels = len(grain_labels)
@@ -467,7 +499,7 @@ def show_distributions_together(labels, data):
 
         ax_r = pyplot.subplot(num_rows, num_cols, cnt)
         cnt += 1
-        ax_r.set_title(PROPS[i])
+        ax_r.set_title(props[i])
         ax_r.grid()
 
         for index, j in enumerate(grain_labels):  # plots mask and distribution per class
@@ -481,12 +513,15 @@ def show_distributions_together(labels, data):
     pyplot.show()
 
 
-def show_distributions_separately(labels, data):
+def show_distributions_separately(labels, data, data_type):
     """ Shows distributions of each class separately
     Args:
         labels (np.array): matrix of classification per pixel
         data (np.array): data
+        data_type (srt): data type (QNM, AMFM, cAFM)
     """
+    props = INFO[data_type]["properties"]
+
     unique_labels = get_unique_labels(labels)
     grain_labels = [l for l in unique_labels if np.sum(labels == l) > LABEL_THRESH]
     num_labels = len(grain_labels)
@@ -504,7 +539,7 @@ def show_distributions_separately(labels, data):
         for i in range(c):
             ax_l = pyplot.subplot(num_rows, num_cols, cnt)
             cnt += 1
-            ax_l.set_title(PROPS[i])
+            ax_l.set_title(props[i])
             m = ax_l.imshow(data[:, :, i], aspect="auto")
             mask = np.ma.masked_where(labels == gl, np.ones(labels.shape))
             ax_l.imshow(mask, alpha=1, cmap="bone", aspect="auto", vmin=0, vmax=1)
@@ -520,12 +555,15 @@ def show_distributions_separately(labels, data):
         pyplot.show()
 
 
-def show_overlaid_distribution(probs, data):
+def show_overlaid_distribution(probs, data, data_type):
     """ Plots distributions overlaid on pixels
     Args:
         probs (np.array): array of probabilities per pixel
         data (np.array): data
+        data_type (srt): data type (QNM, AMFM, cAFM)
     """
+    props = INFO[data_type]["properties"]
+
     h, w, n = probs.shape
     h, w, c = data.shape
 
@@ -538,7 +576,7 @@ def show_overlaid_distribution(probs, data):
     for i in range(c):
         ax = pyplot.subplot(num_rows, num_cols, cnt)
         cnt += 1
-        ax.set_title(PROPS[i])
+        ax.set_title(props[i])
         m = ax.imshow(data[:, :, i])
         pyplot.colorbar(m, fraction=0.046, pad=0.04)
 
@@ -551,12 +589,15 @@ def show_overlaid_distribution(probs, data):
     pyplot.show()
 
 
-def show_classification_correlation(labels, data, title_flag=True, sample_flag=True):
+def show_classification_correlation(labels, data, data_type, title_flag=True, sample_flag=True):
     """ Plots the correlation of data properties after classification
     Args:
         data (np array): data
+        data_type (srt): data type (QNM, AMFM, cAFM)
         outliers (np array): outliers
     """
+    props = INFO[data_type]["properties"]
+
     unique_labels = get_unique_labels(labels)
     grain_labels = [l for l in unique_labels if np.sum(labels == l) > LABEL_THRESH]
     num_labels = len(grain_labels)
@@ -577,8 +618,8 @@ def show_classification_correlation(labels, data, title_flag=True, sample_flag=T
             ax = pyplot.subplot(num_rows, num_cols, cnt)
             ax.grid()
             if title_flag:
-                ax.set_xlabel(PROPS[index_i])
-                ax.set_ylabel(PROPS[index_j])
+                ax.set_xlabel(props[index_i])
+                ax.set_ylabel(props[index_j])
             else:
                 ax.set_xlabel(f"PCA component {index_i + 1}")
                 ax.set_ylabel(f"PCA component {index_j + 1}")
