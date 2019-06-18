@@ -8,11 +8,11 @@ data_info = {
                 }
             },
         "AMFM": {
-            "properties": [],
+            "properties": ["Height", "Deformation", "Youngs Modulus", "Phase"],
             "sample_size": 1
             },
         "cAFM": {
-            "properties": ["property1", "property2"],
+            "properties": ["Current", "Height"],
             "sample_size": 1
             }
         }
