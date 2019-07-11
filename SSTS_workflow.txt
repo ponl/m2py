@@ -45,3 +45,6 @@ ARG TO MM.APPLY_SEGMENTATION()
  - Resulting plot of mm.show_classification() isn't sized/spaced correctly
  
  - May need to add normalization/histogram optimization step at beginning of data processing
+ 
+Persistence Watershed Segmentation
+ - 

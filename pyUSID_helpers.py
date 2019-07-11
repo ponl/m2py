@@ -48,7 +48,7 @@ def mk_h5_file(path):
 
 def mk_USID_file(path):
     
-    h5_fl = mkh5file(path)
+    h5_fl = mk_h5_file(path)
     
     used_file = pu.USIDataset(h5_fl)
     
