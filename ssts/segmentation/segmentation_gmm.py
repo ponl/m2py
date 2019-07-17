@@ -22,14 +22,25 @@ class SegmenterGMM(object):
         if so, what the embedded dimension should be. The dimensionality step will be performed prior to
         fitting the Gaussian mixture model.
 
-        Args:
-            n_components (int): Number of components (i.e. segments) to learn in the GMM.
-            normalize (bool): Normalize the material properties before processing.
-            embedding_dim (int): Dimension used in dimensionality reduction.
-            padding (int): Padding used in sliding window. When set to zero, no neighbor information
+        Parameters
+        ----------
+            n_components : int
+                Number of components (i.e. segments) to learn in the GMM.
+            normalize : bool
+                Normalize the material properties before processing.
+            embedding_dim : int
+                Dimension used in dimensionality reduction.
+            padding : int
+                Padding used in sliding window. When set to zero, no neighbor information
                 will be used. The neighbor values are flattened and fed into the PCA routine.
-            zscale (bool): Whether to use z-score scaling (True) or scale by property maxima (False).
-            nonlinear (bool): Whether to add nonlinear features (True) or not (False).
+            zscale : bool
+                Whether to use z-score scaling (True) or scale by property maxima (False).
+            nonlinear : bool
+                Whether to add nonlinear features (True) or not (False).
+                
+        Returns
+        ----------
+        
         """
         self.normalize = normalize
         self.embedding_dim = embedding_dim
@@ -47,12 +58,16 @@ class SegmenterGMM(object):
         Performs Gaussian mixture model segmentation using
         the provided settings.
 
-        Args:
-            data (NumPy Array): Material properties array of shape (height, width, n_properties)
-            outliers (NumPy Array): Binary array indicating outliers of shape (height, width)
+        Parameters
+        ----------
+            data : NumPy Array
+                Material properties array of shape (height, width, n_properties)
+            outliers : NumPy Array
+                Binary array indicating outliers of shape (height, width)
 
-        Returns:
-            self (SegmenterGMM)
+        Returns
+        ----------
+            self : SegmenterGMM
         """
         if len(data.shape) != 3:
             logger.warning("Data arrays must be of shape (height, width, n_properties).")
@@ -99,12 +114,17 @@ class SegmenterGMM(object):
         Applies the learned Gaussian mixture model and
         returns a labelled array.
 
-        Args:
-            data (NumPy Array): Material properties array of shape (height, width, n_properties)
-            outliers (NumPy Array): Binary array indicating outliers of shape (height, width)
+        Parameters
+        ----------
+            data : NumPy Array
+                Material properties array of shape (height, width, n_properties)
+            outliers : NumPy Array
+                Binary array indicating outliers of shape (height, width)
 
-        Returns:
-            labels (NumPy Array): The segmented array of shape (height, width). Each pixel receives
+        Returns
+        ----------
+            labels : NumPy Array
+                The segmented array of shape (height, width). Each pixel receives
                 a label corresponding to its segment.
         """
         if self.gmm is None:
@@ -127,12 +147,17 @@ class SegmenterGMM(object):
         Learns and applies a learned Gaussian mixture model and
         returns a labelled array.
 
-        Args:
-            data (NumPy Array): Material properties array of shape (height, width, n_properties)
-            outliers (NumPy Array): Binary array indicating outliers of shape (height, width)
+        Parameters
+        ----------
+            data :NumPy Array
+                Material properties array of shape (height, width, n_properties)
+            outliers : NumPy Array
+                Binary array indicating outliers of shape (height, width)
 
-        Returns:
-            labels (NumPy Array): The segmented array of shape (height, width). Each pixel receives
+        Returns
+        ----------
+            labels : NumPy Array
+                The segmented array of shape (height, width). Each pixel receives
                 a label corresponding to its segment.
         """
         gmm = self.fit(data, outliers)
@@ -146,11 +171,15 @@ class SegmenterGMM(object):
         """
         Gathers PCA components.
 
-        Args:
-            data (NumPy Array): Material properties array of shape (height, width, n_properties)
+        Parameters
+        ----------
+            data : NumPy Array
+                Material properties array of shape (height, width, n_properties)
 
-        Returns:
-            pca_components (NumPy Array): PCA components array of shape (height * width, embedding_dim)
+        Returns
+        ----------
+            pca_components : NumPy Array
+                PCA components array of shape (height * width, embedding_dim)
         """
         if self.gmm is None:
             logger.warning("Attempting to access model prior to fitting. You must call .fit() first.")
@@ -180,12 +209,17 @@ class SegmenterGMM(object):
         """
         Computes likelihood of pixel for all classes.
 
-        Args:
-            data (NumPy Array): Material properties array of shape (height, width, n_properties)
-            outliers (NumPy Array): Binary array indicating outliers of shape (height, width)
+        Parameters
+        ----------
+            data : NumPy Array
+                Material properties array of shape (height, width, n_properties)
+            outliers : NumPy Array
+                Binary array indicating outliers of shape (height, width)
 
-        Returns:
-            probs (NumPy Array): The array of probabilities of shape (height, width, num_components).
+        Returns
+        ----------
+            probs : NumPy Array
+                The array of probabilities of shape (height, width, num_components).
                 Each pixel receives a probability per class.
         """
         if self.gmm is None:
@@ -201,6 +235,20 @@ class SegmenterGMM(object):
 
     @staticmethod
     def add_nonlinear_features(data):
+        """
+        Appends permutations of existing data chanels. Currently includes absolute value, squared, cubed, and
+        reciprocal data.
+        
+        Parameters
+        ----------
+            data : NumPy Array
+                Material properties array of shape (height, width, n_properties)
+        
+        Returns
+        ----------
+            NumPy Array
+                data with new, non-linear channels added.
+        """
         abs_data = np.abs(data)
         squared_data = data ** 2
         cubed_data = data ** 3
@@ -210,6 +258,21 @@ class SegmenterGMM(object):
 
     @staticmethod
     def remove_outliers(data, outliers):
+        """
+        Removes outliers from data, based on the height channel
+        
+        Parameters
+        ----------
+            data : NumPy Array
+                Material properties array of shape (height, width, n_properties)
+            outliers : NumPy Array
+                Binary array indicating outliers of shape (height, width)
+        
+        Returns
+        ----------
+            NumPy Array
+                data with outlier values removed
+        """
         if outliers is None:
             return data
 
@@ -218,6 +281,23 @@ class SegmenterGMM(object):
 
     @staticmethod
     def get_windows(data, padding=3, flatten=True):
+        """
+        Retrieves windowns of data surrounding each pixel for segmentation weighting
+        
+        Parameters
+        ----------
+            data : NumPy Array
+                Material properties array of shape (height, width, n_properties)
+            padding : int
+                number of layers of adjacent pixels to include in "window" around single pixel
+            flatten : bool
+                Bool flag determining if array should be flattend or not
+        
+        Returns
+        ----------
+            wins : NumPy Array
+                Matrix of padding windows for segmentation
+        """
         h, w, c = data.shape
         n = 2 * padding + 1
         wins = np.zeros((h * w, n ** 2, c))
@@ -239,11 +319,36 @@ class SegmenterGMM(object):
 
     @staticmethod
     def normalize_by_max(data):
+        """
+        Normalizes all channels by their maximum values
+        
+        Parameters
+        ----------
+            data : NumPy Array
+                SPM data supplied by the user
+                
+        Returns
+        ----------
+            NumPy Array
+                normalized data
+        """
         m = np.max(np.abs(data), axis=0)
         return data / m
 
     @staticmethod
     def get_grains(labels):
-        """ Segments classes labels into grain labels """
+        """
+        Segments classes labels into grain labels
+        
+        Parameters
+        ----------
+        labels : NumPy Array
+            matrix of classification per pixel
+        
+        Returns
+        ----------
+        new_labels : NumPy Array
+            new matrix of grain classifications per pixel after k-means clustering
+        """
         new_labels = measure.label(labels, connectivity=2, background=0)
         return new_labels

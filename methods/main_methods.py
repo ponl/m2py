@@ -12,18 +12,28 @@ INFO = config.data_info
 
 LABEL_THRESH = 100  # each label must have more than this number of pixels
 
-ALPHA = 0.8
-NUM_BINS = 30
+ALPHA = 0.8  # transparency of labels in graphs
+NUM_BINS = 30  # number of bins in histograms
 
 NUM_COLS = 2  # number of cols in plots
 
 ## Properties Distributions
 def show_property_distributions(data, data_type, outliers=None):
-    """ Plots the pdfs of the data properties before classification
-    Args:
-        data (np array): data
-        data_type (srt): data type (QNM, AMFM, cAFM)
-        outliers (np array): outliers
+    """ 
+    Plots the pdfs of the data properties before classification
+    
+    Parameters
+    ----------
+        data : NumPy Array
+            SPM data supplied by the user
+        data_type : str
+            data type corresponding to config.data_info keyword (QNM, AMFM, cAFM)
+        outliers : NumPy Array
+            boolean, 2D array of outlier flags (1's) for functions to pass over
+    
+    Returns
+    ----------
+    
     """
     props = INFO[data_type]["properties"]
 
@@ -50,13 +60,22 @@ def show_property_distributions(data, data_type, outliers=None):
 
 ## Outlier Detection
 def extract_outliers(data, data_type, threshold=2.5):
-    """ Finds outliers from data
-    Args:
-        data (np array): data
-        data_type (srt): data type (QNM, AMFM, cAFM)
-        threshold: (float): z-score threshold
-    Returns:
-        (np array): boolean matrix denoting outliers
+    """
+    Finds outliers from data
+    
+    Parameters
+    ----------
+        data : NumPy Array
+            SPM data supplied by the user
+        data_type : str
+            data type corresponding to config.data_info keyword (QNM, AMFM, cAFM)
+        threshold : float
+            z-score threshold at which to flag a pixel as an outlier
+        
+    Returns
+    ----------
+        outliers : NumPy Array
+            boolean, 2D array of outlier flags (1's) for functions to pass over
     """
     props = INFO[data_type]["properties"]
     if "Height" in props:
@@ -80,11 +99,21 @@ def extract_outliers(data, data_type, threshold=2.5):
 
 
 def show_outliers(data, data_type, outliers):
-    """ Plots data properties and outliers
-    Args:
-        data (np array): data
-        data_type (srt): data type (QNM, AMFM, cAFM)
-        outliers (np array): outliers
+    """
+    Plots data properties and outliers
+    
+    Parameters
+    ----------    
+        data : NumPy Array
+            SPM data supplied by the user
+        data_type : str
+            data type corresponding to config.data_info keyword (QNM, AMFM, cAFM)
+        outliers : NumPy Array
+            boolean, 2D array of outlier flags (1's) for functions to pass over
+        
+    Returns
+    ----------
+    
     """
     props = INFO[data_type]["properties"]
     if "Height" in props:
@@ -116,12 +145,20 @@ def show_outliers(data, data_type, outliers):
 
 
 def smooth_outliers_from_data(data, outliers):
-    """ Replaces outliers from each channel of data with their mean.
-    Args:
-        data (np array): data
-        outliers (np array): outliers
-    Returns:
-        no_outliers_data (np.array): data with outlier values replaced
+    """
+    Replaces outliers from each channel of data with their mean.
+    
+    Parameters
+    ----------
+        data : NumPy Array
+            SPM data supplied by the user
+        outliers : NumPy Array
+            boolean, 2D array of outlier flags (1's) for functions to pass over
+            
+    Returns
+    ----------
+        no_outliers_data : NumPy Array
+            SPM data with outlier values replaced with the channel's mean value
     """
     h, w, c = data.shape
 
@@ -134,24 +171,43 @@ def smooth_outliers_from_data(data, outliers):
 
 ## Frequency removal
 def apply_frequency_removal(data, data_type, compression_percent=95):
-    """ Removes small-magnitude frequencies from data
-    Args:
-        data (np array): data
-        data_type (srt): data type (QNM, AMFM, cAFM)
-        compression_percent (float): percentage of compression
-    Returns:
-        new_data (np array): compressed data
+    """
+    Removes small-magnitude frequencies from data
+    
+    Parameters
+    ----------
+        data : NumPy Array
+            SPM data supplied by the user
+        data_type : str
+            data type corresponding to config.data_info keyword (QNM, AMFM, cAFM)
+        compression_percent : float
+            percentage of compression
+            
+    Returns
+    ----------
+        new_data : NumPy Array
+            compressed data
     """
 
     def remove_small_magnitude_freqs(f_prop_shift, h, w, compression_percent):
-        """ Removes small-magnitude frequencies in Fourier space
-        Args:
-            f_prop_shift (np.array): frequencies
-            h (int): height of data array
-            w (int): width of data array
-            compression_percent (float): percentage of compression
-        Returns:
-            f_prop_shift (np.array): high frequencies
+        """
+        Removes small-magnitude frequencies in Fourier space
+        
+        Parameters
+        ----------
+            f_prop_shift : NumPy Array
+                frequencies
+            h : int
+                height of data array
+            w : int
+                width of data array
+            compression_percent : float
+                percentage of compression
+            
+        Returns
+        ----------
+            f_prop_shift : NumPy Array
+                high frequencies
         """
         mags = np.abs(f_prop_shift)
         thresh = np.percentile(mags, compression_percent)
@@ -205,55 +261,92 @@ def apply_frequency_removal(data, data_type, compression_percent=95):
 
 ## Features Correlations
 def get_all_paths(path):
-    """ Gets list of data files in path
-    Args:
-        path (str): data directory
-    Returns:
-        fls (list): data files
+    """
+    Gets list of data files in path
+    
+    Parameters
+    ----------
+        path : str
+            data directory
+    
+    Returns
+    ----------
+        fls : list
+            data files
     """
     fls = [os.path.join(path, f) for f in os.listdir(path)]
     return fls
 
 
 def get_sample_count(path):
-    """ Gets number of data files in path
-    Args:
-        path (str): data directory
-    Returns:
-        (int): number of data files
+    """
+    Gets number of data files in path
+    
+    Parameters
+    ----------
+        path : str
+            data directory
+        
+    Returns
+    ----------
+        int
+            number of data files
     """
     return len(get_all_paths(path))
 
 
 def get_path_from_index(index, path):
-    """ Gets specific data file from path
-    Args:
-        index (int): specific data file index
-        path (str): data directory
-    Returns:
-        (str): data file
+    """
+    Gets specific data file from path
+    
+    Parameters
+    ----------
+        index : int
+            specific data file index
+        path : str
+            data directory
+    
+    Returns
+    ----------
+        str
+            data file
     """
     return get_all_paths(path)[index]
 
 
 def get_data(index, path):
-    """ Loads specific data file
-    Args:
-        index (int): specific data file index
-        path (str): data directory
-    Returns:
-       (np.array): data from file
+    """
+    Loads specific data file
+    
+    Parameters
+    ----------
+        index : int
+            specific data file index
+        path : str
+            data directory
+        
+    Returns
+    ----------
+       NumPy Array
+           data from file
     """
     fl = get_path_from_index(index, path)
     return np.load(fl)
 
 
 def get_correlations(path):
-    """ Computes correlation for all files in path
-    Args:
-        path (str): data directory
-    Returns:
-        cors (list): correlation between all pairs of properties per file
+    """
+    Computes correlation for all files in path
+    
+    Parameters
+    ----------
+        path : str
+            data directory
+    
+    Returns
+    ----------
+        cors :list
+            correlation between all pairs of properties per file
     """
     N = get_sample_count(path)
     cors = []
@@ -272,12 +365,20 @@ def get_correlations(path):
 
 
 def get_correlation_values(cors, r, c):
-    """ Gets correlation between properties r and c for all files
-    Args:
-        cors (list): propertiess correlations per file
-        r (int): first property index
-        c (int): second property index
-    Returns:
+    """
+    Gets correlation between properties r and c for all files
+    
+    Parameters
+    ----------
+        cors : list
+            propertiess correlations per file
+        r : int
+            first property index
+        c : int
+            second property index
+            
+    Returns
+    ----------
         rc_cors (list): correlation between properties r and c per file
     """
     rc_cors = [cor[r, c] for cor in cors]
@@ -286,11 +387,21 @@ def get_correlation_values(cors, r, c):
 
 # TODO use with many data files
 def show_correlations(num_props, data_type, path):
-    """ Plots correlations between all properties
-    Args:
-        num_props (int): number of properties
-        data_type (srt): data type (QNM, AMFM, cAFM)
-        path (str): data directory
+    """
+    Plots correlations between all properties
+    
+    Parameters
+    ----------
+        num_props : int
+            number of properties
+        data_type : str
+            data type corresponding to config.data_info keyword (QNM, AMFM, cAFM)
+        path : str
+            data directory
+        
+    Returns
+    ----------
+    
     """
     props = INFO[data_type]["properties"]
 
@@ -327,7 +438,18 @@ def show_correlations(num_props, data_type, path):
 
 ## Auxiliary methods
 def get_unique_labels(labels):
-    """ Gets unique labels """
+    """
+    Gets unique labels
+    
+    Parameters
+    ----------
+        labels : NumPy Array
+            matrix of classification per pixel
+            
+    Returns
+    ----------
+    
+    """
     unique_labels = list(np.unique(labels))
     if 0 in unique_labels:  # skips outliers AND borders in watershed segmentation
         unique_labels.remove(0)
@@ -338,11 +460,21 @@ def get_unique_labels(labels):
 
 ## Plotting methods
 def show_classification(labels, data, data_type):
-    """ Shows classification of pixels after segmentation
-    Args:
-        labels (np.array): matrix of classification per pixel
-        data (np.array): data
-        data_type (srt): data type (QNM, AMFM, cAFM)
+    """
+    Shows classification of pixels after segmentation
+    
+    Parameters
+    ----------
+        labels : NumPy Array
+            matrix of classification per pixel
+        data : NumPy Array
+            SPM data supplied by the user
+        data_type : str
+            data type corresponding to config.data_info keyword (QNM, AMFM, cAFM)
+            
+    Returns
+    ----------
+    
     """
     props = INFO[data_type]["properties"]
 
@@ -380,12 +512,23 @@ def show_classification(labels, data, data_type):
 
 
 def show_classification_distributions(labels, data, data_type, title_flag=True):
-    """ Shows distributions of classes after segmentation
-    Args:
-        labels (np.array): matrix of classification per pixel
-        data (np.array): data
-        data_type (srt): data type (QNM, AMFM, cAFM)
-        title_flag (bool): to show titles or not
+    """
+    Shows distributions of classes after segmentation
+    
+    Parameters
+    ----------
+        labels : NumPy Array
+            matrix of classification per pixel
+        data : NumPy Array
+            SPM data supplied by the user
+        data_type : str
+            data type corresponding to config.data_info keyword (QNM, AMFM, cAFM)
+        title_flag : bool
+            flag for plots to show titles or not
+            
+    Returns
+    ----------
+    
     """
     props = INFO[data_type]["properties"]
 
@@ -425,11 +568,21 @@ def show_classification_distributions(labels, data, data_type, title_flag=True):
 
 
 def show_grain_area_distribution(labels, data_type, data_subtype=None):
-    """ Computes a histogram of the number of pixels per label
-    Args:
-        labels (np.array): matrix of classification per pixel
-        data_type (str): data type (QNM, AMFM, cAFM)
-        data_subtype (str): data subtype (backgrounded, nanowires)
+    """
+    Computes a histogram of the number of pixels per label
+    
+    Parameters
+    ----------
+        labels : NumPy Array
+            matrix of classification per pixel
+        data : NumPy Array
+            SPM data supplied by the user
+        data_type : str
+            data type corresponding to config.data_info keyword (QNM, AMFM, cAFM)
+            
+    Returns
+    ----------
+    
     """
     if data_subtype is None:
         sample_area = INFO[data_type]["sample_size"] ** 2
@@ -472,11 +625,21 @@ def show_grain_area_distribution(labels, data_type, data_subtype=None):
 
 
 def show_distributions_together(labels, data, data_type):
-    """ Shows distributions of classes after segmentation
-    Args:
-        labels (np.array): matrix of classification per pixel
-        data (np.array): data
-        data_type (srt): data type (QNM, AMFM, cAFM)
+    """
+    Shows distributions of classes after segmentation
+    
+    Parameters
+    ----------
+        labels : NumPy Array
+            matrix of classification per pixel
+        data : NumPy Array
+            SPM data supplied by the user
+        data_type : str
+            data type corresponding to config.data_info keyword (QNM, AMFM, cAFM)
+            
+    Returns
+    ----------
+    
     """
     props = INFO[data_type]["properties"]
 
@@ -514,11 +677,21 @@ def show_distributions_together(labels, data, data_type):
 
 
 def show_distributions_separately(labels, data, data_type):
-    """ Shows distributions of each class separately
-    Args:
-        labels (np.array): matrix of classification per pixel
-        data (np.array): data
-        data_type (srt): data type (QNM, AMFM, cAFM)
+    """
+    Shows distributions of each class separately
+    
+    Parameters
+    ----------
+        labels : NumPy Array
+            matrix of classification per pixel
+        data : NumPy Array
+            SPM data supplied by the user
+        data_type : str
+            data type corresponding to config.data_info keyword (QNM, AMFM, cAFM)
+            
+    Returns
+    ----------
+    
     """
     props = INFO[data_type]["properties"]
 
@@ -556,11 +729,20 @@ def show_distributions_separately(labels, data, data_type):
 
 
 def show_overlaid_distribution(probs, data, data_type):
-    """ Plots distributions overlaid on pixels
-    Args:
-        probs (np.array): array of probabilities per pixel
-        data (np.array): data
-        data_type (srt): data type (QNM, AMFM, cAFM)
+    """
+    Plots distributions overlaid on pixels
+    Parameters
+    ----------
+        probs : NumPy Array
+            array of probabilities per pixel
+        data : NumPy Array
+            SPM data supplied by the user
+        data_type : str
+            data type corresponding to config.data_info keyword (QNM, AMFM, cAFM)
+            
+    Returns
+    ----------
+    
     """
     props = INFO[data_type]["properties"]
 
@@ -590,11 +772,21 @@ def show_overlaid_distribution(probs, data, data_type):
 
 
 def show_classification_correlation(labels, data, data_type, title_flag=True, sample_flag=True):
-    """ Plots the correlation of data properties after classification
-    Args:
-        data (np array): data
-        data_type (srt): data type (QNM, AMFM, cAFM)
-        outliers (np array): outliers
+    """
+    Plots the correlation of data properties after classification
+    
+    Parameters
+    ----------
+        data : NumPy Array
+            SPM data supplied by the user
+        data_type : str
+            data type corresponding to config.data_info keyword (QNM, AMFM, cAFM)
+        outliers : NumPy Array
+            boolean, 2D array of outlier flags (1's) for functions to pass over
+    
+    Returns
+    ----------
+    
     """
     props = INFO[data_type]["properties"]
 
@@ -652,10 +844,19 @@ def show_classification_correlation(labels, data, data_type, title_flag=True, sa
 
 # NOTE Auxilliary methods for creating discrete colorbar
 def colorbar_index(ncolors, cmap):
-    """ Adds discrete colorbar to plot.
-    Args:
-        ncolors: number of colors.
-        cmap: colormap instance
+    """
+    Adds discrete colorbar to plot.
+    
+    Parameters
+    ----------
+        ncolors : int
+            number of colors.
+        cmap : str
+            colormap instance
+            
+    Returns
+    ----------
+    
     """
     cmap = cmap_discretize(cmap, ncolors)
     mappable = cm.ScalarMappable(cmap=cmap)
@@ -667,10 +868,14 @@ def colorbar_index(ncolors, cmap):
 
 
 def cmap_discretize(cmap, N):
-    """Return a discrete colormap from the continuous colormap cmap.
-    Args:
-        cmap: colormap instance.
-        N: number of colors.
+    """
+    Return a discrete colormap from the continuous colormap cmap.
+    
+    Parameters
+        cmap : str
+            colormap instance.
+        N : int
+            umber of colors.
     """
     colors_i = np.concatenate((np.linspace(0, 1.0, N), (0.0, 0.0, 0.0, 0.0)))
     colors_rgba = cmap(colors_i)

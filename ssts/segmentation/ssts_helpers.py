@@ -18,15 +18,21 @@ qnm_fields = ['Adhesion', 'Deformation', 'Dissipation', 'Height', 'Modulus', 'St
 
 def array_stats(array):
     """
-    Takes in numpy array and calculates median, standard deviation, and variance
+    Takes in numpy array of data or labels and calculates median, standard deviation, and variance
     
-    Args:
-    array – np.array()
+    Parameters
+    ----------
+        array : NumPy Array
+            single channel of data array
     
-    Returns:
-    median – float64
-    std_dev – float64
-    var – float64
+    Returns
+    ----------
+        median : float64
+            median value of the array
+        std_dev : float64
+            standard deviation of the array
+        var : float64
+            variance of the array
     """
     median = np.median(array)
     std_dev = np.std(array)
@@ -38,14 +44,20 @@ def phase_sort(array, labels, n_components):
     """
     Takes in a 3D numpy array and sorts pixels into a dictionary based on phase labels
     
-    Args:
-    array – np.array() of SPM data
-    phase_labels – np.array() of phase labels
-    n_components – int number of phases for sorting
+    Parameters
+    ----------
+        array : NumPy Array
+            Array of SPM data
+        phase_labels : NumPy Array
+            array of phase labels
+        n_components : int
+            number of phases for sorting
     
-    Returns:
-    phases – dictionary of numpy arrays, where each key is the phase number and each value is
-        a flattened array of the pixels in that phase and their properties
+    Returns
+    ----------
+        phases : dict
+            Dictionary of numpy arrays, where each key is the phase number and each value is
+            a flattened array of the pixels in that phase and their properties
     """
     x,y,z = array.shape
 
@@ -148,11 +160,14 @@ def plot_single_phase_props(array):
     """
     Takes in a flattened array of SPM data and plots the histogram distributions of a single phase of the data
     
-    Args:
-    array – np.array() of SPM data
+    Parameters
+    ----------
+        array : NumPy Array
+            Array of SPM data
     
-    Returns:
-    plots figures
+    Returns
+    ----------
+        
     """
     xy,z = array.shape
     print ("Shape: ", array.shape)
@@ -183,12 +198,15 @@ def plot_all_phases_props(phases):
     """
     Takes in a flattened array of SPM data and plots the histogram distributions of all phases of the data
     
-    Args:
-    phases – dictionary of numpy arrays, where each key is the phase number and each value is
-        a flattened array of the pixels in that phase and their properties
+    Parameters
+    ----------
+        phases : dict
+            Dictionary of numpy arrays, where each key is the phase number and each value is
+            a flattened array of the pixels in that phase and their properties
     
-    Returns:
-    plots figures
+    Returns
+    ----------
+        
     """
     for k, v in phases.items():
         print ('Phase ', k,)
@@ -200,13 +218,17 @@ def gen_phase_stats(phases):
     """
     Takes in dictionary of phases from phase_sort() and generates a parallel dictionary of stats
     
-    Args:
-    phases – dictionary of numpy arrays, where each key is the phase number and each value is
-        a flattened array of the pixels in that phase and their properties
+    Parameters
+    ----------
+        phases : dict
+            Dictionary of numpy arrays, where each key is the phase number and each value a flattened array of the
+            pixels in that phase and their properties
         
-    Returns:
-    phase_stats – dictionary of numpy arrays, where each key is the phase number and each value is
-        a flattened array of the basic statistical analysis of the phase properties
+    Returns
+    ----------
+        phase_stats : dict
+            Dictionary of numpy arrays, where each key is the phase number and each value is
+            a flattened array of the basic statistical analysis of the phase properties
     """
     phase_stats = {}
     keys = ['median', 'standard deviation', 'variance']
@@ -223,17 +245,23 @@ def gen_phase_stats(phases):
 
 def grain_sort(array, grain_labels):
     """
-    Takes in an array and the associated domain (grain) labels. Sorts pixels into a dictionary, where each value is
-    an array of the pixel values in the domain
+    Takes in an array and the associated domain (grain) labels. Sorts pixels into a dictionary, where each value
+    is an array of the pixel values in the domain
     
-    Args:
-    array – np.array() of SPM data
-    domain_labels – np.array() of domain labels
-    n_components – int number of phases for sorting
+    Parameters
+    ----------
+        array : NumPy Array
+            Array of SPM data
+        domain_labels : NumPy Array
+            Array of domain labels
+        n_components : int
+            number of phases for sorting
     
-    Returns:
-    grain_props – dictionary of numpy arrays, where each key is the phase number and each value is
-        a flattened array of the pixels in that grain and their properties
+    Returns
+    ----------
+        grain_props : dict
+            Dictionary of numpy arrays, where each key is the phase number and each value is
+            a flattened array of the pixels in that grain and their properties
     """
     x,y,z = array.shape
 
@@ -262,16 +290,20 @@ def grain_sort(array, grain_labels):
 
 def gen_grain_stats(grain_props):
     """
-    Takes in a dictionary of the different grains, produced by grain_sort(), and calculates basic histogram statistics
-    on the constituent pixels
+    Takes in a dictionary of the different grains, produced by grain_sort(), and calculates basic histogram
+    statistics on the constituent pixels
     
-    Args:
-    grain_props – dictionary of numpy arrays, where each key is the phase number and each value is
-        a flattened array of the pixels in that grain and their properties
+    Parameters
+    ----------
+        grain_props : dict
+            Dictionary of numpy arrays, where each key is the phase number and each value is
+            a flattened array of the pixels in that grain and their properties
         
-    Returns:
-    grain_stats – dictionary of numpy arrays, where each key is the grain number and each value is
-        a flattened array of the basic statistical analysis of the grain properties
+    Returns
+    ----------
+        grain_stats : dict
+            Dictionary of numpy arrays, where each key is the grain number and each value is
+            a flattened array of the basic statistical analysis of the grain properties
     """
     grain_stats = {}
     keys = ['median', 'standard deviation', 'variance']

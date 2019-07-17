@@ -1,3 +1,20 @@
+"""
+This script contains channel and figure information specific to each SPM technique. The dictionary is structured as follows:
+
+data_info{
+    "SPM_technique":{
+        "properties (i.e. channels)": ["List", "of", "Channels"],
+        "sample_size (i.e. scan dimensions)": {
+            "sample_key_word": int,
+            "sample_key_word": int,
+            "sample_key_word": int,
+        },
+    
+    },
+    ...
+}
+"""
+
 data_info = {
         "QNM": {
             "properties": ["Adhesion", "Deformation", "Dissipation", "LogDMT", "Height", "Stiffness"],
