@@ -83,7 +83,7 @@ class PersistenceWatershed(object):
         self.mt = PersistenceWatershed.merge_tree(self.maxes, edges, pers_thresh)
 
     def apply_threshold(self, t):
-         """
+        """
         
         
         Parameters
@@ -128,7 +128,7 @@ class PersistenceWatershed(object):
         return rlab
 
     def get_neighbor_labels(self, p, source=None):
-         """
+        """
         
         
         Parameters
@@ -149,7 +149,7 @@ class PersistenceWatershed(object):
 
     @staticmethod
     def get_neighbors(p, bounds, k=1):
-         """
+        """
         
         
         Parameters
@@ -166,7 +166,7 @@ class PersistenceWatershed(object):
 
     @staticmethod
     def inbounds(p, bounds):
-         """
+        """
         
         
         Parameters
@@ -181,7 +181,7 @@ class PersistenceWatershed(object):
 
     @staticmethod
     def find(components, u):
-         """
+        """
         
         
         Parameters
@@ -198,7 +198,7 @@ class PersistenceWatershed(object):
 
     @staticmethod
     def merge_tree(maxima, edges, pers_thresh):
-         """
+        """
         
         
         Parameters

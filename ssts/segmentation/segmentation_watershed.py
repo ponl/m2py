@@ -1,9 +1,18 @@
+import os
+import sys
+
 import logging
 
 import numpy as np
 from scipy.signal import convolve2d
-import ssts.segmentation.persistence_watershed_algorithm as pws
-from methods import main_methods as mm  # NOTE SSTS directory must be in PYTHONPATH
+
+from segmentation import persistence_watershed_algorithm as pws
+
+module_path = os.path.abspath(os.path.join('../'))
+if module_path not in sys.path:
+    sys.path.append(module_path)
+from utils import main_methods as mm
+
 
 logger = logging.getLogger(__name__)
 
