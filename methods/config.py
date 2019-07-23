@@ -1,7 +1,19 @@
-import os
+data_info = {
+        "QNM": {
+            "properties": ["Adhesion", "Deformation", "Dissipation", "LogDMT", "Height", "Stiffness"],
+            "sample_size": {
+                "Backgrounded": 2,
+                "2ComponentFilms": 0.5,
+                "Nanowires": 5
+                }
+            },
+        "AMFM": {
+            "properties": ["Height", "Deformation", "Youngs Modulus", "Phase"],
+            "sample_size": 1
+            },
+        "cAFM": {
+            "properties": ["Current", "Height"],
+            "sample_size": 1
+            }
+        }
 
-data_directory_path = os.path.join(os.path.dirname(__file__), "../data/")
-
-data_properties = ["Adhesion", "Deformation", "Dissipation", "LogDMT", "Height", "Stiffness"]
-
-height_index = 4
