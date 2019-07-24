@@ -3,20 +3,6 @@ import numpy as np
 
 class PersistenceWatershed(object):
     def __init__(self, arr):
-        """
-        Performs persistence watershed segmentation on data, based on its height channel. 
-        
-        Parameters
-        ----------
-            normalize : bool
-                Normalize data before processing.
-            smooth : bool
-                Smooth data with neighbor information before processing.
-                
-        Returns
-        ----------
-        
-        """
         self.WSHED = 0
         self.INIT = -1
         self.arr = arr
@@ -29,17 +15,6 @@ class PersistenceWatershed(object):
         self.mt = None
 
     def train(self, pers_thresh):
-        """
-        
-        
-        Parameters
-        ----------
-            
-                
-        Returns
-        ----------
-        
-        """
         rank = np.argsort(self.arr.flatten())
         for r in rank[::-1]:
             p = np.unravel_index(r, self.dim)
@@ -83,17 +58,6 @@ class PersistenceWatershed(object):
         self.mt = PersistenceWatershed.merge_tree(self.maxes, edges, pers_thresh)
 
     def apply_threshold(self, t):
-        """
-        
-        
-        Parameters
-        ----------
-            
-                
-        Returns
-        ----------
-        
-        """
         # Build relabel dictionary
         relabel = {i: i for i in range(self.current_label)}
         for e in self.mt:
@@ -128,17 +92,6 @@ class PersistenceWatershed(object):
         return rlab
 
     def get_neighbor_labels(self, p, source=None):
-        """
-        
-        
-        Parameters
-        ----------
-            
-                
-        Returns
-        ----------
-        
-        """
         N = PersistenceWatershed.get_neighbors(p, self.arr.shape)
         L = set()
         for n in N:
@@ -149,66 +102,22 @@ class PersistenceWatershed(object):
 
     @staticmethod
     def get_neighbors(p, bounds, k=1):
-        """
-        
-        
-        Parameters
-        ----------
-            
-                
-        Returns
-        ----------
-        
-        """
         N = [(p[0] + i, p[1] + j) for i in range(-k, k + 1) for j in range(-k, k + 1)]
         N = [n for n in N if (PersistenceWatershed.inbounds(n, bounds) and not (n[0] == p[0] and n[1] == p[1]))]
         return N
 
     @staticmethod
     def inbounds(p, bounds):
-        """
-        
-        
-        Parameters
-        ----------
-            
-                
-        Returns
-        ----------
-        
-        """
         return np.prod([0 <= p[i] < bounds[i] for i in range(2)])
 
     @staticmethod
     def find(components, u):
-        """
-        
-        
-        Parameters
-        ----------
-            
-                
-        Returns
-        ----------
-        
-        """
         while components[u] != u:
             u = components[u]
         return u
 
     @staticmethod
     def merge_tree(maxima, edges, pers_thresh):
-        """
-        
-        
-        Parameters
-        ----------
-            
-                
-        Returns
-        ----------
-        
-        """
         # maxima=(label, max value of label in data)
         # edges=(label1, label2, max value of boundary in data)
         pairs = []

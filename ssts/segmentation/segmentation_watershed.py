@@ -1,13 +1,9 @@
-import os
-import sys
-
 import logging
 
 import numpy as np
 from scipy.signal import convolve2d
-
-from segmentation import persistence_watershed_algorithm as pws
-
+import ssts.segmentation.persistence_watershed_algorithm as pws
+from methods import main_methods as mm  # NOTE SSTS directory must be in PYTHONPATH
 
 logger = logging.getLogger(__name__)
 
@@ -17,18 +13,9 @@ DEF_THRESH = 0.5
 class SegmenterWatershed(object):
     def __init__(self, normalize=True, smooth=True):
         """
-        Performs persistence watershed segmentation on data, based on its height channel. 
-        
-        Parameters
-        ----------
-            normalize : bool
-                Normalize data before processing.
-            smooth : bool
-                Smooth data with neighbor information before processing.
-                
-        Returns
-        ----------
-        
+        Args:
+            normalize (bool): Normalize data before processing.
+            smooth (bool): Smooth data with neighbor information before processing.
         """
         self.normalize = normalize
         self.smooth = smooth
@@ -39,14 +26,8 @@ class SegmenterWatershed(object):
         """
         Performs Persistence Watershed segmentation on selected material property.
 
-        Parameters
-        ----------
-            data : NumPy Array
-                Material property array of shape (height, width).
-                
-        Returns
-        ----------
-        
+        Args:
+            data (NumPy Array): Material property array of shape (height, width).
         """
 
         if len(data.shape) != 2:
@@ -66,20 +47,14 @@ class SegmenterWatershed(object):
         """
         Applies threshold to the watershed graph and returns a labelled array.
 
-        Parameters
-        ----------
-            data : NumPy Array
-                Material property array of shape (height, width).
-            outliers : NumPy Array
-                Binary array indicating outliers of shape (height, width)
-            pers_thresh : float
-                merging threshold
+        Args:
+            data (NumPy Array): Material property array of shape (height, width).
+            outliers (NumPy Array): Binary array indicating outliers of shape (height, width)
+            pers_thresh (float): merging threshold
 
-        Returns
-        ----------
-            NumPy Array
-                The segmented array of shape (height, width). Each pixel receives a label corresponding to its
-                segment.
+        Returns:
+            (NumPy Array): The segmented array of shape (height, width). Each pixel receives
+                a label corresponding to its segment.
         """
         if self.pws is None:
             logger.warning("Attempting to transform prior to fitting. You must call .fit() first.")
@@ -101,19 +76,13 @@ class SegmenterWatershed(object):
         """
         Learns and uses persistence watershed graph.
 
-        Parameters
-        ----------
-            data : Numpy Array
-                Mateial property array of shape (height, width).
-            outliers : NumPy Array
-                Binary array indicating outliers of shape (height, width)
-            pers_thresh : float
-                merging threshold
+        Args:
+            data (Numpy Array): Mateial property array of shape (height, width).
+            outliers (NumPy Array): Binary array indicating outliers of shape (height, width)
+            pers_thresh (float): merging threshold
 
-        Returns
-        ----------
-            Numpy Array
-                The segmented array of shape (height, width). Each pixel receives
+        Returns:
+            (Numpy Array): The segmented array of shape (height, width). Each pixel receives
                 a label corresponding to its segment.
         """
         self.fit(data, pers_thresh)
@@ -125,36 +94,10 @@ class SegmenterWatershed(object):
 
     @staticmethod
     def normalize_data(data):  # Maps from (-a,b) to (0,1). This allows negative values to be grains.
-        """
-        
-        Parameters
-        ----------
-            data : NumPy Array
-                Material property array of shape (height, width).
-        
-        Returns
-        ----------
-            NumPy Array
-                normalized data
-        """
         return np.abs(data) / np.max(np.abs(data))
 
     @staticmethod
     def smooth_data(data, window=3):
-        """
-        
-        Parameters
-        ----------
-            data : NumPy Array
-                Material property array of shape (height, width).
-            window : int
-                size of neighbor window
-        
-        Returns
-        ----------
-            NumPy Array
-                data smoothed using neighbooring pixel information
-        """
         center = int(window / 2)
         smoothing_matrix = np.ones((window, window))
         smoothing_matrix[center, center] = 2
