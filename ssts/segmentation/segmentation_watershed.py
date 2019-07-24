@@ -8,11 +8,6 @@ from scipy.signal import convolve2d
 
 from segmentation import persistence_watershed_algorithm as pws
 
-module_path = os.path.abspath(os.path.join('../'))
-if module_path not in sys.path:
-    sys.path.append(module_path)
-from utils import main_methods as mm
-
 
 logger = logging.getLogger(__name__)
 

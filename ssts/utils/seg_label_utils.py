@@ -1,21 +1,37 @@
-import os
-import sys
-from decimal import Decimal
-
-from utils import main_methods as mm
-
-module_path = os.path.abspath(os.path.join('../'))
-if module_path not in sys.path:
-    sys.path.append(module_path)
-from segmentation import segmentation_gmm as seg_gmm
-from segmentation import segmentation_watershed as seg_water
-
 import numpy as np
 import scipy.stats as stats
 import matplotlib.pyplot as plt
 
-qnm_fields = ['Adhesion', 'Deformation', 'Dissipation', 'Height', 'Modulus',
-              'Stiffness']
+from utils import config
+
+"""
+This module contains functions for sorting and grouping labels resulting
+from the GMM segmentation and clustering workflows. Labels and their
+descriptive statistics are dynamically sorted into dictionaries of lists
+and arrays so that they may be iterably accessed and analyzed.
+"""
+
+data_channels = config.data_info['QNM']['properties']
+
+def get_unique_labels(labels):
+    """
+    Gets unique labels
+    
+    Parameters
+    ----------
+        labels : NumPy Array
+            matrix of classification per pixel
+            
+    Returns
+    ----------
+    
+    """
+    unique_labels = list(np.unique(labels))
+    if 0 in unique_labels:  # skips outliers AND borders in watershed segmentation
+        unique_labels.remove(0)
+
+    unique_labels = sorted(unique_labels, key=lambda k: np.sum(labels == k))
+    return unique_labels
 
 def array_stats(array):
     """
@@ -68,7 +84,7 @@ def phase_sort(array, labels, n_components):
     data = np.reshape(array, ((x*y), z))
     labels = np.reshape(labels, (x*y))
     
-    phase_list = mm.get_unique_labels(labels)
+    phase_list = get_unique_labels(labels)
     phase_list.sort()
 
     phase0 = []
@@ -192,8 +208,8 @@ def plot_single_phase_props(array):
                  linewidth = 2, c = 'k')
         plt.plot([median-std_dev, median-std_dev], [0,ymax+5],
                  linewidth = 2, c = 'k')
-        plt.title(f'{qnm_fields[i]}'+'  Median: '+ '{:.2e}'.format(median)+',
-                  Stand. Dev.: '+'{:.2e}'.format(std_dev))
+        plt.title(f'{data_channels[i]}'+'  Median: '+ '{:.2e}'.format(median)+
+                  ',Stand. Dev.: '+'{:.2e}'.format(std_dev))
         plt.ylim(0, ymax+5)
         plt.legend()
 
@@ -284,7 +300,7 @@ def grain_sort(array, grain_labels):
     data = np.reshape(array, ((x*y), z))
     labels = np.reshape(grain_labels, (x*y))
 
-    unique_labels = mm.get_unique_labels(labels)
+    unique_labels = get_unique_labels(labels)
     unique_labels.sort()
 
     grain_count = len(unique_labels)
