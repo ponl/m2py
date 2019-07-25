@@ -620,8 +620,10 @@ def colorbar_index(ncolors, cmap):
     mappable.set_array([])
     mappable.set_clim(-0.5, ncolors + 0.5)
     colorbar = pyplot.colorbar(mappable, fraction=0.046, pad=0.04)
-    colorbar.set_ticks(np.linspace(0, ncolors, ncolors))
-    colorbar.set_ticklabels(range(ncolors))
+
+    if ncolors < 20:
+        colorbar.set_ticks(np.linspace(0, ncolors, ncolors))
+        colorbar.set_ticklabels(range(ncolors))
 
 
 def cmap_discretize(cmap, N):
