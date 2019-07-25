@@ -204,50 +204,6 @@ def apply_frequency_removal(data, data_type, compression_percent=95):
 
 
 ## Features Correlations
-def get_all_paths(path):
-    """ Gets list of data files in path
-    Args:
-        path (str): data directory
-    Returns:
-        fls (list): data files
-    """
-    fls = [os.path.join(path, f) for f in os.listdir(path)]
-    return fls
-
-
-def get_sample_count(path):
-    """ Gets number of data files in path
-    Args:
-        path (str): data directory
-    Returns:
-        (int): number of data files
-    """
-    return len(get_all_paths(path))
-
-
-def get_path_from_index(index, path):
-    """ Gets specific data file from path
-    Args:
-        index (int): specific data file index
-        path (str): data directory
-    Returns:
-        (str): data file
-    """
-    return get_all_paths(path)[index]
-
-
-def get_data(index, path):
-    """ Loads specific data file
-    Args:
-        index (int): specific data file index
-        path (str): data directory
-    Returns:
-       (np.array): data from file
-    """
-    fl = get_path_from_index(index, path)
-    return np.load(fl)
-
-
 def get_correlations(path):
     """ Computes correlation for all files in path
     Args:
@@ -255,10 +211,12 @@ def get_correlations(path):
     Returns:
         cors (list): correlation between all pairs of properties per file
     """
-    N = get_sample_count(path)
+    files = os.listdir(path)
+    N = len(files)
     cors = []
     for i in range(N):
-        data = get_data(i, path)
+        f = files[i]
+        data = np.load(os.path.join(path, f))
         c = data.shape[2]
 
         C = np.zeros((c, c))  # correlation matrix of properties per file
