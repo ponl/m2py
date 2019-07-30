@@ -2,8 +2,7 @@ import logging
 
 import numpy as np
 from scipy.signal import convolve2d
-import ssts.segmentation.persistence_watershed_algorithm as pws
-from methods import main_methods as mm  # NOTE SSTS directory must be in PYTHONPATH
+from segmentation import persistence_watershed_algorithm as pws
 
 logger = logging.getLogger(__name__)
 
