@@ -8,7 +8,8 @@ from utils import seg_label_utils as slu
 
 INFO = config.data_info
 
-LABEL_THRESH = 100  # each label must have more than this number of pixels
+LABEL_THRESH = 200 # each label must have more than this number of pixels
+BG_THRESH = 10000
 
 ALPHA = 0.8  # transparency of labels in graphs
 NUM_BINS = 30  # number of bins in histograms
@@ -20,27 +21,20 @@ data_channels = config.data_info['QNM']['properties'] # channel names to use
 
 ## Plotting methods
 
-def show_classification(labels, data, data_type):
-    """
-    Shows classification of pixels after segmentation
-    
-    Parameters
-    ----------
-        labels : NumPy Array
-            matrix of classification per pixel
-        data : NumPy Array
-            SPM data supplied by the user
-        data_type : str
-            data type corresponding to config.data_info keyword (QNM, AMFM, cAFM)
-            
-    Returns
-    ----------
-    
+def show_classification(labels, data, data_type, input_cmap='jet', bg_contrast_flag=False):
+    """ Shows classification of pixels after segmentation
+    Args:
+        labels (np.array): matrix of classification per pixel
+        data (np.array): data
+        data_type (srt): data type (QNM, AMFM, cAFM)
+        input_cmap (str): to use different color map
+        bg_contrast_flag (bool) highlights biggest grain (background) in plot
     """
     props = INFO[data_type]["properties"]
 
-    unique_labels = slu.get_unique_labels(labels)
+    unique_labels = get_unique_labels(labels)
     grain_labels = [l for l in unique_labels if np.sum(labels == l) > LABEL_THRESH]
+    bg_labels = [l for l in grain_labels if np.sum(labels == l) > BG_THRESH]
     num_labels = len(grain_labels)
 
     h, w, c = data.shape
@@ -50,7 +44,7 @@ def show_classification(labels, data, data_type):
 
     fig = pyplot.figure(figsize=(20, 14), dpi=80, facecolor="w", edgecolor="k")
     cnt = 1
-    cmap = pyplot.get_cmap("jet", num_labels)
+    cmap = pyplot.get_cmap(input_cmap, num_labels)
     for i in range(c):
         ax_l = pyplot.subplot(num_rows, num_cols, cnt)
         cnt += 1
@@ -61,8 +55,13 @@ def show_classification(labels, data, data_type):
         ax_r = pyplot.subplot(num_rows, num_cols, cnt)
         cnt += 1
         ax_r.set_title("Segmentation")
-        for index, j in enumerate(grain_labels):  # plots mask and distribution per class
-            color_step = num_labels - (index + 1)
+        for index, j in enumerate(grain_labels):  # plots mask per class
+            if (j in bg_labels) and bg_contrast_flag:
+                color_step = num_labels - 1 # uses a distinct color
+            else:
+                color_step = num_labels - (index + 1)
+
+            # mask hides the values of the condition
             mask = np.ma.masked_where(labels != j, color_step * np.ones(labels.shape))
             ax_r.imshow(mask, alpha=ALPHA, cmap=cmap, vmin=0, vmax=cmap.N)
 
