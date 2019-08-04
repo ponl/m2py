@@ -10,7 +10,7 @@ from methods import config
 
 INFO = config.data_info
 
-LABEL_THRESH = 200 # each label must have more than this number of pixels
+LABEL_THRESH = 10  # each label must have more than this number of pixels
 BG_THRESH = 10000
 
 ALPHA = 0.8
@@ -287,7 +287,8 @@ def show_correlations(num_props, data_type, path):
 ## Auxiliary methods
 def get_unique_labels(labels):
     """ Gets unique labels """
-    unique_labels = list(np.unique(labels))
+    labels = labels.astype(np.int64)
+    unique_labels = [a for a in np.unique(labels) if isinstance(a, np.int64)] # removes masked values
     if 0 in unique_labels:  # skips outliers AND borders in watershed segmentation
         unique_labels.remove(0)
 
@@ -295,22 +296,128 @@ def get_unique_labels(labels):
     return unique_labels
 
 
+def get_closest_value(labels, outliers, i, j):
+    """ For a specified  pixel (i, j), we get its closest (four neighbors) non-outlier value from labels
+    Args:
+        labels (np.array): matrix of classification per pixel
+        outliers (np array): outliers
+        i (int): row value of pixel
+        j (int): col value of pixel
+    Returns:
+        value (int): closest non-outlier value.
+    """
+    h, w = labels.shape
+
+    distance = np.Inf
+
+    k = min(i + 1, h - 1)
+    while True:
+        if outliers[k, j]:
+            k += 1
+            if k == h:
+                break
+        else:
+            value = labels[k, j]
+            distance = k - i
+            break
+
+    k = max(i - 1, 0)
+    while True:
+        if outliers[k, j]:
+            k -= 1
+            if k == -1:
+                break
+        else:
+            if i - k < distance:
+                distance = i - k
+                value = labels[k, j]
+
+            break
+
+    k = min(j + 1, w - 1)
+    while True:
+        if outliers[i, k]:
+            k += 1
+            if k == w:
+                break
+        else:
+            if k - j < distance:
+                distance = k - j
+                value = labels[i, k]
+
+            break
+
+    k = max(j - 1, 0)
+    while True:
+        if outliers[i, k]:
+            k -= 1
+            if k == -1:
+                break
+        else:
+            if j - k < distance:
+                distance = j - k
+                value = labels[i, k]
+
+            break
+
+    return value
+
+
+def fill_out_zeros(labels, zeros):
+    """ For each zero value, we replace its value in labels by its closest non-zero value
+    Args:
+        labels (np.array): matrix of classification per pixel
+        zeros (np array): zero values
+    Returns:
+        labels (int): closest non-outlier value.
+    """
+    x, y = np.nonzero(zeros)
+    for i, j in zip(x, y):
+        value = get_closest_value(labels, zeros, i, j)
+        labels[i, j] = value
+
+    return labels
+
+
+def get_significant_labels(labels, bg_contrast_flag=False):
+    """ Shows classification of pixels after segmentation
+    Args:
+        labels (np.array): matrix of classification per pixel
+        bg_contrast_flag (bool) highlights biggest grain (background) in plot
+    Returns:
+        new_labels (np.array): matrix of classification per pixel for large components
+    """
+    unique_labels = get_unique_labels(labels)
+    grain_labels = [l for l in unique_labels if np.sum(labels == l) > LABEL_THRESH]
+    bg_labels = [l for l in grain_labels if np.sum(labels == l) > BG_THRESH]
+    num_labels = len(grain_labels)
+
+    h, w = labels.shape
+    new_labels = np.zeros((h, w))
+    for index, j in enumerate(grain_labels):  # plots mask per class
+        if (j in bg_labels) and bg_contrast_flag:
+            color_step = num_labels  # uses a distinct color
+        else:
+            color_step = num_labels - index
+
+        new_labels[labels == j] += color_step
+
+    return new_labels
+
+
 ## Plotting methods
-def show_classification(labels, data, data_type, input_cmap='jet', bg_contrast_flag=False):
+def show_classification(labels, data, data_type, input_cmap="jet"):
     """ Shows classification of pixels after segmentation
     Args:
         labels (np.array): matrix of classification per pixel
         data (np.array): data
         data_type (srt): data type (QNM, AMFM, cAFM)
         input_cmap (str): to use different color map
-        bg_contrast_flag (bool) highlights biggest grain (background) in plot
     """
     props = INFO[data_type]["properties"]
 
     unique_labels = get_unique_labels(labels)
-    grain_labels = [l for l in unique_labels if np.sum(labels == l) > LABEL_THRESH]
-    bg_labels = [l for l in grain_labels if np.sum(labels == l) > BG_THRESH]
-    num_labels = len(grain_labels)
+    num_labels = len(unique_labels)
 
     h, w, c = data.shape
     num_plots = 2 * c
@@ -330,16 +437,7 @@ def show_classification(labels, data, data_type, input_cmap='jet', bg_contrast_f
         ax_r = pyplot.subplot(num_rows, num_cols, cnt)
         cnt += 1
         ax_r.set_title("Segmentation")
-        for index, j in enumerate(grain_labels):  # plots mask per class
-            if (j in bg_labels) and bg_contrast_flag:
-                color_step = num_labels - 1 # uses a distinct color
-            else:
-                color_step = num_labels - (index + 1)
-
-            # mask hides the values of the condition
-            mask = np.ma.masked_where(labels != j, color_step * np.ones(labels.shape))
-            ax_r.imshow(mask, alpha=ALPHA, cmap=cmap, vmin=0, vmax=cmap.N)
-
+        ax_r.imshow(labels, alpha=ALPHA, cmap=cmap)
         colorbar_index(ncolors=num_labels, cmap=cmap)
 
     pyplot.tight_layout()
@@ -357,8 +455,7 @@ def show_classification_distributions(labels, data, data_type, title_flag=True):
     props = INFO[data_type]["properties"]
 
     unique_labels = get_unique_labels(labels)
-    grain_labels = [l for l in unique_labels if np.sum(labels == l) > LABEL_THRESH]
-    num_labels = len(grain_labels)
+    num_labels = len(unique_labels)
 
     h, w, c = data.shape
     num_plots = 2 * c
@@ -383,7 +480,7 @@ def show_classification_distributions(labels, data, data_type, title_flag=True):
         cnt += 1
         ax_r.grid()
         ax_r.set_title("Distributions")
-        for index, j in enumerate(grain_labels):
+        for index, j in enumerate(unique_labels):
             color_step = num_labels - (index + 1)
             ax_r.hist(data[:, :, i][labels == j], NUM_BINS, alpha=ALPHA, density=True, color=cmap(color_step))
 
@@ -404,32 +501,31 @@ def show_grain_area_distribution(labels, data_type, data_subtype=None):
         sample_area = INFO[data_type]["sample_size"][data_subtype] ** 2
 
     unique_labels = get_unique_labels(labels)
-    grain_areas = [np.sum(labels == l) for l in unique_labels]
+    grain_areas = sorted([np.sum(labels == l) for l in unique_labels], reverse=True)
 
-    sig_areas = sorted([a for a in grain_areas if a > LABEL_THRESH], reverse=True)
-    percent_sig_areas = sig_areas / np.sum(grain_areas) * 100
-    physical_sig_areas = percent_sig_areas / 100 * sample_area
+    percent_grain_areas = grain_areas / np.sum(grain_areas) * 100
+    physical_grain_areas = percent_grain_areas / 100 * sample_area
 
     pyplot.figure(figsize=(18, 5), dpi=80, facecolor="w", edgecolor="k")
     pyplot.subplot(1, 3, 1)
-    pyplot.plot(np.log10(sig_areas), "ro")
-    pyplot.plot(np.log10(sig_areas), "b")
+    pyplot.plot(np.log10(grain_areas), "ro")
+    pyplot.plot(np.log10(grain_areas), "b")
     pyplot.xlabel("Grain")
     pyplot.ylabel("Log number of pixles per grain")
     pyplot.title("Log Number of Pixels per Grain")
     pyplot.grid()
 
     pyplot.subplot(1, 3, 2)
-    pyplot.plot(percent_sig_areas, "ro")
-    pyplot.plot(percent_sig_areas, "b")
+    pyplot.plot(percent_grain_areas, "ro")
+    pyplot.plot(percent_grain_areas, "b")
     pyplot.xlabel("Grain")
     pyplot.ylabel("Grain percentage (%)")
     pyplot.title("Grain Percentage (%)")
     pyplot.grid()
 
     pyplot.subplot(1, 3, 3)
-    pyplot.plot(physical_sig_areas, "ro")
-    pyplot.plot(physical_sig_areas, "b")
+    pyplot.plot(physical_grain_areas, "ro")
+    pyplot.plot(physical_grain_areas, "b")
     pyplot.xlabel("Grain")
     pyplot.ylabel("Grain area (um2)")
     pyplot.title("Grain Area (um2)")
@@ -438,18 +534,18 @@ def show_grain_area_distribution(labels, data_type, data_subtype=None):
     pyplot.show()
 
 
-def show_distributions_together(labels, data, data_type):
+def show_distributions_together(labels, data, data_type, input_cmap):
     """ Shows distributions of classes after segmentation
     Args:
         labels (np.array): matrix of classification per pixel
         data (np.array): data
         data_type (srt): data type (QNM, AMFM, cAFM)
+        input_cmap (str): to use different color map
     """
     props = INFO[data_type]["properties"]
 
     unique_labels = get_unique_labels(labels)
-    grain_labels = [l for l in unique_labels if np.sum(labels == l) > LABEL_THRESH]
-    num_labels = len(grain_labels)
+    num_labels = len(unique_labels)
 
     h, w, c = data.shape
     num_plots = 2 * c
@@ -458,71 +554,26 @@ def show_distributions_together(labels, data, data_type):
 
     fig = pyplot.figure(figsize=(20, 15), dpi=80, facecolor="w", edgecolor="k")
     cnt = 1
-    cmap = pyplot.get_cmap("jet", num_labels)
+    cmap = pyplot.get_cmap(input_cmap, num_labels)
     for i in range(c):
         ax_l = pyplot.subplot(num_rows, num_cols, cnt)
         cnt += 1
         ax_l.set_title("Segmentation")
+        ax_l.imshow(labels, alpha=ALPHA, cmap=cmap, aspect="auto")
 
         ax_r = pyplot.subplot(num_rows, num_cols, cnt)
         cnt += 1
         ax_r.set_title(props[i])
         ax_r.grid()
-
-        for index, j in enumerate(grain_labels):  # plots mask and distribution per class
+        for index, j in enumerate(unique_labels):  # plots mask and distribution per class
             color_step = num_labels - (index + 1)
-            mask = np.ma.masked_where(labels != j, color_step * np.ones(labels.shape))
-            ax_l.imshow(mask, alpha=ALPHA, cmap=cmap, aspect="auto", vmin=0, vmax=num_labels)
-
             ax_r.hist(data[:, :, i][labels == j], NUM_BINS, alpha=ALPHA, density=True, color=cmap(color_step))
 
     pyplot.tight_layout()
     pyplot.show()
 
 
-def show_distributions_separately(labels, data, data_type):
-    """ Shows distributions of each class separately
-    Args:
-        labels (np.array): matrix of classification per pixel
-        data (np.array): data
-        data_type (srt): data type (QNM, AMFM, cAFM)
-    """
-    props = INFO[data_type]["properties"]
-
-    unique_labels = get_unique_labels(labels)
-    grain_labels = [l for l in unique_labels if np.sum(labels == l) > LABEL_THRESH]
-    num_labels = len(grain_labels)
-
-    h, w, c = data.shape
-    num_plots = 2 * c
-    num_cols = 2 * NUM_COLS
-    num_rows = int(np.ceil(num_plots / num_cols))
-
-    cmap = pyplot.get_cmap("jet", num_labels)
-    for index, gl in enumerate(grain_labels):
-        color_step = num_labels - (index + 1)
-        fig = pyplot.figure(figsize=(20, 15), dpi=80, facecolor="w", edgecolor="k")
-        cnt = 1
-        for i in range(c):
-            ax_l = pyplot.subplot(num_rows, num_cols, cnt)
-            cnt += 1
-            ax_l.set_title(props[i])
-            m = ax_l.imshow(data[:, :, i], aspect="auto")
-            mask = np.ma.masked_where(labels == gl, np.ones(labels.shape))
-            ax_l.imshow(mask, alpha=1, cmap="bone", aspect="auto", vmin=0, vmax=1)
-            pyplot.colorbar(m, fraction=0.046, pad=0.04)
-
-            ax_r = pyplot.subplot(num_rows, num_cols, cnt)
-            cnt += 1
-            ax_r.set_title("Distribution")
-            ax_r.hist(data[:, :, i][labels == gl], NUM_BINS, alpha=ALPHA, density=True, color=cmap(color_step))
-            ax_r.grid()
-
-        pyplot.tight_layout()
-        pyplot.show()
-
-
-def show_overlaid_distribution(probs, data, data_type):
+def show_overlaid_distribution(probs, data, data_type, outliers=None):
     """ Plots distributions overlaid on pixels
     Args:
         probs (np.array): array of probabilities per pixel
@@ -550,7 +601,10 @@ def show_overlaid_distribution(probs, data, data_type):
     for i in range(n):
         ax = pyplot.subplot(num_rows, num_cols, cnt)
         cnt += 1
-        m = ax.imshow(probs[:, :, i], vmin=0, vmax=1)
+        prob = probs[:, :, i]
+        masked = np.ma.masked_where(outliers == 1, prob)
+        m = ax.imshow(masked, vmin=0, vmax=1)
+
         pyplot.colorbar(m, fraction=0.046, pad=0.04)
 
     pyplot.show()
