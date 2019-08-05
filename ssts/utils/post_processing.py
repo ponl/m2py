@@ -8,7 +8,7 @@ from utils import seg_label_utils as slu
 
 INFO = config.data_info
 
-LABEL_THRESH = 200 # each label must have more than this number of pixels
+LABEL_THRESH = 4 # each label must have more than this number of pixels
 BG_THRESH = 10000
 
 ALPHA = 0.8  # transparency of labels in graphs
@@ -32,7 +32,7 @@ def show_classification(labels, data, data_type, input_cmap='jet', bg_contrast_f
     """
     props = INFO[data_type]["properties"]
 
-    unique_labels = get_unique_labels(labels)
+    unique_labels = slu.get_unique_labels(labels)
     grain_labels = [l for l in unique_labels if np.sum(labels == l) > LABEL_THRESH]
     bg_labels = [l for l in grain_labels if np.sum(labels == l) > BG_THRESH]
     num_labels = len(grain_labels)
