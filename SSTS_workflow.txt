@@ -1,0 +1,50 @@
+Need to re-write SSTS functions to interface with HDF5 file format. Until then, all analysis is on numpy arrays
+
+Before analysis:
+ - Remove background distortions in each scan (using Igor or Gwyddion)
+ - Save each scan as a separate .txt file
+ - Compile the cleaned .txt files for each scan into a single numpy array
+ - Save each scan array as a numpy binary file
+
+ANALYSIS:
+
+Feature-space exploration
+ - Load in .npy scan file
+ - If desired, visualize gradients through convolution with the Sobel operator (main_methods.sobel())
+ - If desired, examine feature correlations (main_methods.get_correlation_values() and main_methods.plot_correlation())
+ - If desired, examine feature distributions (main_methods.show_property_distributions())
+
+***NOTES***
+ - mm.show_property_distributions() calls mm.extract_outliers() without allowing for a threshold adjustment. ADDED THRESHOLD ARG
+TO MM.SHOW_PROPERTY_DISTRIBUTIONS()
+
+ - mm.show_property_distributions() calls config.data_properties(), which alphabetically lists the qnm feature types. This will 
+need to be adjusted to dynamically call the alphabetical list of scan types supplied by the different SPM types. Right now, it 
+could simply reference user-entered feature-types. In the future, it should call pyUSID.hdf5_utils.get_channel_types() or whatever 
+that function is
+
+Outlier detection and removal:
+ - Outliers are easily detected using the height scan. Supply height index in function call in initial investigations
+ - Detect outliers with an adjustable threshold. Default threshold is 2.5 standard deviations (main_methods.extract_outliers())
+ - Using matrix of extracted outlier values, adjust abberant pixels to new value (e.g. average intensity, or zero)
+
+***NOTES***
+ - In the analysis functions that call main_methods.extract_outliers(), it might be easier to just call it once from the height
+and then just keep referencing that matrix of outlier identities as a mask each time. That way the outlier locations don't change
+between feature types.
+
+Gaussian Mixture Model Segmentation:
+ - Train GMM model using main_methods.segment()
+ - Retain classifications by creating 2D matrix assigned as main_methods.apply_segmentation()
+ - 
+ 
+***NOTES***
+ - main_methods.apply_segmentation() calls main_methods.extract_outliers() without allowing threshold adjustment. ADDED THRESHOLD
+ARG TO MM.APPLY_SEGMENTATION()
+
+ - Resulting plot of mm.show_classification() isn't sized/spaced correctly
+ 
+ - May need to add normalization/histogram optimization step at beginning of data processing
+ 
+Persistence Watershed Segmentation
+ - 

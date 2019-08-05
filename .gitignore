@@ -71,6 +71,10 @@ target/
 
 # Jupyter Notebook
 .ipynb_checkpoints
+ssts/Anton_OPV_analysis.ipynb
+ssts/Manuscript_data.ipynb
+ssts/scripts/ssts_helperfunc_lab.ipynb
+ssts/scripts/SSTS_data_analysis.ipynb
 
 # pyenv
 .python-version
