@@ -285,8 +285,7 @@ def show_classification_correlation(labels, data, data_type, title_flag=True, sa
     props = INFO[data_type]["properties"]
 
     unique_labels = slu.get_unique_labels(labels)
-    grain_labels = [l for l in unique_labels if np.sum(labels == l) > LABEL_THRESH]
-    num_labels = len(grain_labels)
+    num_labels = len(unique_labels)
 
     h, w, c = data.shape
     num_plots = np.sum(np.arange(c))
@@ -312,7 +311,7 @@ def show_classification_correlation(labels, data, data_type, title_flag=True, sa
 
             cnt += 1
             title = f"Correlation: "
-            for index, l in enumerate(grain_labels):
+            for index, l in enumerate(unique_labels):
                 data_i = data[:, :, index_i][labels == l]
                 data_i /= np.max(np.abs(data_i))
                 data_j = data[:, :, index_j][labels == l]
