@@ -73,8 +73,9 @@ target/
 .ipynb_checkpoints
 ipynb/Anton_OPV_analysis.ipynb
 ipynb/Manuscript_data.ipynb
-ssts/scripts/ssts_helperfunc_lab.ipynb
-ssts/scripts/SSTS_data_analysis.ipynb
+ipynb/pyUSID_helper_functions.ipynb
+matmap/scripts/matmap_helperfunc_lab.ipynb
+matmap/scripts/MatMAP_data_analysis.ipynb
 
 # pyenv
 .python-version

@@ -1,4 +1,14 @@
-**Results from the MATDAT 2018 Hackathon**
+# MatMAP
+
+## Materials Morphology Analysis Package
+
+### Installation
+
+### Usage
+
+### Background
+
+#### Results from the MATDAT 2018 Hackathon
 
 Wesley Tatum, Diego Torrejon, Patrick O’Neil
 
