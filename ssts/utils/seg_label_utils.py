@@ -2,7 +2,7 @@ import numpy as np
 import scipy.stats as stats
 import matplotlib.pyplot as plt
 
-from utils import config
+from ssts.utils import config
 
 """
 This module contains functions for sorting and grouping labels resulting
@@ -10,6 +10,9 @@ from the GMM segmentation and clustering workflows. Labels and their
 descriptive statistics are dynamically sorted into dictionaries of lists
 and arrays so that they may be iterably accessed and analyzed.
 """
+
+LABEL_THRESH = 500  # each label must have more than this number of pixels
+BG_THRESH = 10000
 
 data_channels = config.data_info["QNM"]["properties"]
 
