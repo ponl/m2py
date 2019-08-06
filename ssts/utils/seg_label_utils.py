@@ -11,38 +11,150 @@ descriptive statistics are dynamically sorted into dictionaries of lists
 and arrays so that they may be iterably accessed and analyzed.
 """
 
-data_channels = config.data_info['QNM']['properties']
+data_channels = config.data_info["QNM"]["properties"]
+
 
 def get_unique_labels(labels):
     """
     Gets unique labels
-    
+
     Parameters
     ----------
         labels : NumPy Array
             matrix of classification per pixel
-            
+
     Returns
     ----------
-    
+
     """
-    unique_labels = list(np.unique(labels))
+    labels = labels.astype(np.int64)
+    unique_labels = [a for a in np.unique(labels) if isinstance(a, np.int64)]
     if 0 in unique_labels:  # skips outliers AND borders in watershed segmentation
         unique_labels.remove(0)
 
     unique_labels = sorted(unique_labels, key=lambda k: np.sum(labels == k))
     return unique_labels
 
+
+def get_closest_value(labels, outliers, i, j):
+    """ For a specified  pixel (i, j), we get its closest (four neighbors) non-outlier value from labels
+    Args:
+        labels (np.array): matrix of classification per pixel
+        outliers (np array): outliers
+        i (int): row value of pixel
+        j (int): col value of pixel
+    Returns:
+        value (int): closest non-outlier value.
+    """
+    h, w = labels.shape
+
+    distance = np.Inf
+
+    k = min(i + 1, h - 1)
+    while True:
+        if outliers[k, j]:
+            k += 1
+            if k == h:
+                break
+        else:
+            value = labels[k, j]
+            distance = k - i
+            break
+
+    k = max(i - 1, 0)
+    while True:
+        if outliers[k, j]:
+            k -= 1
+            if k == -1:
+                break
+        else:
+            if i - k < distance:
+                distance = i - k
+                value = labels[k, j]
+
+            break
+
+    k = min(j + 1, w - 1)
+    while True:
+        if outliers[i, k]:
+            k += 1
+            if k == w:
+                break
+        else:
+            if k - j < distance:
+                distance = k - j
+                value = labels[i, k]
+
+            break
+
+    k = max(j - 1, 0)
+    while True:
+        if outliers[i, k]:
+            k -= 1
+            if k == -1:
+                break
+        else:
+            if j - k < distance:
+                distance = j - k
+                value = labels[i, k]
+
+            break
+
+    return value
+
+
+def fill_out_zeros(labels, zeros):
+    """ For each zero value, we replace its value in labels by its closest non-zero value
+    Args:
+        labels (np.array): matrix of classification per pixel
+        zeros (np array): zero values
+    Returns:
+        labels (int): closest non-outlier value.
+    """
+    x, y = np.nonzero(zeros)
+    for i, j in zip(x, y):
+        value = get_closest_value(labels, zeros, i, j)
+        labels[i, j] = value
+
+    return labels
+
+
+def get_significant_labels(labels, bg_contrast_flag=False):
+    """ Shows classification of pixels after segmentation
+    Args:
+        labels (np.array): matrix of classification per pixel
+        bg_contrast_flag (bool) highlights biggest grain (background) in plot
+    Returns:
+        new_labels (np.array): matrix of classification per pixel for large components
+    """
+    unique_labels = get_unique_labels(labels)
+    grain_labels = [l for l in unique_labels if np.sum(labels == l) > LABEL_THRESH]
+    bg_labels = [l for l in grain_labels if np.sum(labels == l) > BG_THRESH]
+    num_labels = len(grain_labels)
+
+    h, w = labels.shape
+    new_labels = np.zeros((h, w))
+    for index, j in enumerate(grain_labels):  # plots mask per class
+        if (j in bg_labels) and bg_contrast_flag:
+            color_step = num_labels  # uses a distinct color
+        else:
+            color_step = num_labels - index
+
+        new_labels[labels == j] += color_step
+
+    return new_labels
+
+
 def array_stats(array):
     """
     Takes in numpy array of data or labels and calculates median, standard 
     deviation, and variance
-    
+
     Parameters
     ----------
         array : NumPy Array
             single channel of data array
-    
+
     Returns
     ----------
         median : float64
@@ -55,8 +167,9 @@ def array_stats(array):
     median = np.median(array)
     std_dev = np.std(array)
     var = np.var(array)
-    
+
     return median, std_dev, var
+
 
 def phase_sort(array, labels, n_components):
     """
@@ -79,11 +192,11 @@ def phase_sort(array, labels, n_components):
             each value is a flattened array of the pixels in that phase and 
             their properties
     """
-    x,y,z = array.shape
+    x, y, z = array.shape
 
-    data = np.reshape(array, ((x*y), z))
-    labels = np.reshape(labels, (x*y))
-    
+    data = np.reshape(array, ((x * y), z))
+    labels = np.reshape(labels, (x * y))
+
     phase_list = get_unique_labels(labels)
     phase_list.sort()
 
@@ -121,60 +234,61 @@ def phase_sort(array, labels, n_components):
             phase9.append(data[i, :])
         else:
             pass
-        
+
     phases = {}
-    
+
     if len(phase0) >= 1:
         phases[0] = np.asarray(phase0)
     else:
         pass
-    
+
     if len(phase1) >= 1:
         phases[1] = np.asarray(phase1)
     else:
         pass
-    
+
     if len(phase2) >= 1:
         phases[2] = np.asarray(phase2)
     else:
         pass
-    
+
     if len(phase3) >= 1:
         phases[3] = np.asarray(phase3)
     else:
         pass
-    
+
     if len(phase4) >= 1:
         phases[4] = np.asarray(phase4)
     else:
         pass
-    
+
     if len(phase5) >= 1:
         phases[5] = np.asarray(phase5)
     else:
         pass
-    
+
     if len(phase6) >= 1:
         phases[6] = np.asarray(phase6)
     else:
         pass
-    
+
     if len(phase7) >= 1:
         phases[7] = np.asarray(phase7)
     else:
         pass
-    
+
     if len(phase8) >= 1:
         phases[8] = np.asarray(phase8)
     else:
         pass
-    
+
     if len(phase9) >= 1:
         phases[9] = np.asarray(phase9)
     else:
         pass
-    
+
     return phases
+
 
 def plot_single_phase_props(array):
     """
@@ -190,32 +304,30 @@ def plot_single_phase_props(array):
     ----------
         
     """
-    xy,z = array.shape
-    print ("Shape: ", array.shape)
+    xy, z = array.shape
+    print("Shape: ", array.shape)
 
-    fig = plt.figure(figsize=(10,15))
+    fig = plt.figure(figsize=(10, 15))
     for i in range(z):
-        counts, bins = np.histogram(array[:,i], bins = 30)
+        counts, bins = np.histogram(array[:, i], bins=30)
         ymax = counts.max()
 
-        median, std_dev, var = array_stats(array[:,i])
+        median, std_dev, var = array_stats(array[:, i])
 
-        plt.subplot(3,2,1+i)
-        plt.hist(array[:,i], bins = 30, alpha = 0.5)
-        plt.plot([median, median], [0, ymax+5], label = 'Median',
-                 linewidth = 3, c = 'r')
-        plt.plot([median+std_dev, median+std_dev], [0,ymax+5], label = 'Std Dev',
-                 linewidth = 2, c = 'k')
-        plt.plot([median-std_dev, median-std_dev], [0,ymax+5],
-                 linewidth = 2, c = 'k')
-        plt.title(f'{data_channels[i]}'+'  Median: '+ '{:.2e}'.format(median)+
-                  ',Stand. Dev.: '+'{:.2e}'.format(std_dev))
-        plt.ylim(0, ymax+5)
+        plt.subplot(3, 2, 1 + i)
+        plt.hist(array[:, i], bins=30, alpha=0.5)
+        plt.plot([median, median], [0, ymax + 5], label="Median", linewidth=3, c="r")
+        plt.plot([median + std_dev, median + std_dev], [0, ymax + 5], label="Std Dev", linewidth=2, c="k")
+        plt.plot([median - std_dev, median - std_dev], [0, ymax + 5], linewidth=2, c="k")
+        plt.title(
+            f"{data_channels[i]}" + "  Median: " + "{:.2e}".format(median) + ",Stand. Dev.: " + "{:.2e}".format(std_dev)
+        )
+        plt.ylim(0, ymax + 5)
         plt.legend()
 
     plt.tight_layout()
     plt.show()
-    
+
     return
 
 
@@ -236,10 +348,11 @@ def plot_all_phases_props(phases):
         
     """
     for k, v in phases.items():
-        print ('Phase ', k,)
+        print("Phase ", k)
         plot_single_phase_props(v)
-    
+
     return
+
 
 def gen_phase_stats(phases):
     """
@@ -261,15 +374,15 @@ def gen_phase_stats(phases):
             the phase properties
     """
     phase_stats = {}
-    keys = ['median', 'standard deviation', 'variance']
+    keys = ["median", "standard deviation", "variance"]
 
     for k, v in phases.items():
         xy, z = v.shape
         for i in range(z):
             phase_stats[k] = {}
         for h in range(z):
-            phase_stats[k][h] = array_stats(v[:,h])
-            
+            phase_stats[k][h] = array_stats(v[:, h])
+
     return phase_stats
 
 
@@ -295,10 +408,10 @@ def grain_sort(array, grain_labels):
             each value is a flattened array of the pixels in that grain and 
             their properties
     """
-    x,y,z = array.shape
+    x, y, z = array.shape
 
-    data = np.reshape(array, ((x*y), z))
-    labels = np.reshape(grain_labels, (x*y))
+    data = np.reshape(array, ((x * y), z))
+    labels = np.reshape(grain_labels, (x * y))
 
     unique_labels = get_unique_labels(labels)
     unique_labels.sort()
@@ -306,21 +419,22 @@ def grain_sort(array, grain_labels):
     grain_count = len(unique_labels)
 
     grain_props = {}
-    for h in range(x*y):
-        pixel_props = data[h,:]
+    for h in range(x * y):
+        pixel_props = data[h, :]
         label = labels[h]
 
         if label in grain_props:
             old_value = np.asarray(grain_props[label])
-                  
-            # Append new pixel vector to old vectors      
+
+            # Append new pixel vector to old vectors
             new_value = np.vstack((old_value, pixel_props))
         else:
             new_value = np.asarray(pixel_props)
 
         grain_props[label] = new_value
-    
+
     return grain_props
+
 
 def gen_grain_stats(grain_props):
     """
@@ -343,12 +457,12 @@ def gen_grain_stats(grain_props):
             of the grain properties
     """
     grain_stats = {}
-    keys = ['median', 'standard deviation', 'variance']
-    
-    for k,v in grain_props.items():
+    keys = ["median", "standard deviation", "variance"]
+
+    for k, v in grain_props.items():
         grain = np.asarray(v)
 
-        if len(grain.shape) == 1: 
+        if len(grain.shape) == 1:
             tup = grain.shape
             z = tup[0]
             for i in range(z):
@@ -359,8 +473,8 @@ def gen_grain_stats(grain_props):
             xy, z = grain.shape
             for i in range(z):
                 grain_stats[k] = {}
-            
-            for i in range(z):        
-                grain_stats[k][i] = array_stats(grain[:,i])
-            
+
+            for i in range(z):
+                grain_stats[k][i] = array_stats(grain[:, i])
+
     return grain_stats

@@ -13,10 +13,11 @@ NUM_COLS = 2  # number of cols in plots
 
 ## Outlier detection and filtering methods
 
+
 def extract_outliers(data, data_type, threshold=2.5):
     """
     Finds outliers from data
-    
+
     Parameters
     ----------
         data : NumPy Array
@@ -212,7 +213,9 @@ def apply_frequency_removal(data, data_type, compression_percent=95):
 
     return new_data
 
+
 ## Data and file i/o methods
+
 
 def get_all_paths(path):
     """
