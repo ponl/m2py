@@ -1,6 +1,4 @@
-# MatMAP
-
-## Materials Morphology Analysis Package
+# MatMAP: Materials Morphology Analysis Package
 
 ### Installation
 
