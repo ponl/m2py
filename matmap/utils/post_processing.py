@@ -380,4 +380,3 @@ def cmap_discretize(cmap, N):
         cdict[key] = [(indices[i], colors_rgba[i - 1, ki], colors_rgba[i, ki]) for i in range(N + 1)]
 
     return colors.LinearSegmentedColormap(cmap.name + "_%d" % N, cdict)
-

@@ -4,6 +4,7 @@ import numpy as np
 from scipy import signal
 from matplotlib import pyplot, colors
 from scipy.fftpack import fft2, ifft2, fftshift, ifftshift
+
 from matmap.utils import config
 
 INFO = config.data_info

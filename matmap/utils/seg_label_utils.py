@@ -11,7 +11,7 @@ descriptive statistics are dynamically sorted into dictionaries of lists
 and arrays so that they may be iterably accessed and analyzed.
 """
 
-LABEL_THRESH = 500  # each label must have more than this number of pixels
+LABEL_THRESH = 300  # each label must have more than this number of pixels
 BG_THRESH = 10000
 
 data_channels = config.data_info["QNM"]["properties"]
