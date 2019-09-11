@@ -11,7 +11,7 @@ descriptive statistics are dynamically sorted into dictionaries of lists
 and arrays so that they may be iterably accessed and analyzed.
 """
 
-LABEL_THRESH = 4  # each label must have more than this number of pixels
+LABEL_THRESH = 100  # each label must have more than this number of pixels
 BG_THRESH = 10000
 
 data_channels = config.data_info["QNM"]["properties"]
@@ -28,7 +28,8 @@ def get_unique_labels(labels):
 
     Returns
     ----------
-
+        unique_labels : NumPy Array
+            1D array that lists all of the unique labels
     """
     labels = labels.astype(np.int64)
     unique_labels = [a for a in np.unique(labels) if isinstance(a, np.int64)]
@@ -41,13 +42,22 @@ def get_unique_labels(labels):
 
 def get_closest_value(labels, outliers, i, j):
     """ For a specified  pixel (i, j), we get its closest (four neighbors) non-outlier value from labels
-    Args:
-        labels (np.array): matrix of classification per pixel
-        outliers (np array): outliers
-        i (int): row value of pixel
-        j (int): col value of pixel
-    Returns:
-        value (int): closest non-outlier value.
+    
+    Parameters
+    ----------
+        labels : NumPy Array
+            matrix of classification per pixel
+        outliers : NumPy Array
+            outliers
+        i : int
+            row value of pixel
+        j : int
+            col value of pixel
+            
+    Returns
+    ----------
+        value : int
+            closest non-outlier value.
     """
     h, w = labels.shape
 
@@ -107,12 +117,19 @@ def get_closest_value(labels, outliers, i, j):
 
 
 def fill_out_zeros(labels, zeros):
-    """ For each zero value, we replace its value in labels by its closest non-zero value
-    Args:
-        labels (np.array): matrix of classification per pixel
-        zeros (np array): zero values
-    Returns:
-        labels (int): closest non-outlier value.
+    """
+    For each zero value, we replace its value in labels by its closest non-zero value
+    
+    Parameters
+    ----------
+        labels : NumPy Array
+            matrix of classification per pixel
+        zeros : NumPy Array
+            zero values
+    Returns
+    ----------
+        labels : int
+            closest non-outlier value.
     """
     x, y = np.nonzero(zeros)
     for i, j in zip(x, y):
@@ -123,12 +140,20 @@ def fill_out_zeros(labels, zeros):
 
 
 def get_significant_labels(labels, bg_contrast_flag=False):
-    """ Shows classification of pixels after segmentation
-    Args:
-        labels (np.array): matrix of classification per pixel
-        bg_contrast_flag (bool) highlights biggest grain (background) in plot
-    Returns:
-        new_labels (np.array): matrix of classification per pixel for large components
+    """
+    Shows classification of pixels after segmentation
+    
+    Parameters
+    ----------
+        labels : NumPy Array
+            matrix of classification per pixel
+        bg_contrast_flag : bool
+            highlights biggest grain (background) in plot
+            
+    Returns
+    ----------
+        new_labels : NumPy Array
+            matrix of classification per pixel for large components
     """
     unique_labels = get_unique_labels(labels)
     grain_labels = [l for l in unique_labels if np.sum(labels == l) > LABEL_THRESH]

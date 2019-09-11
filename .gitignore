@@ -72,6 +72,7 @@ target/
 # Jupyter Notebook
 .ipynb_checkpoints
 ipynb/Manuscript_data.ipynb
+ipynb/Anton_OPV_analysis.ipynb
 ipynb/pyUSID_helper_functions.ipynb
 matmap/scripts/matmap_helperfunc_lab.ipynb
 matmap/scripts/MatMAP_data_analysis.ipynb

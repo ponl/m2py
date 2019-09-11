@@ -18,12 +18,22 @@ NUM_COLS = 2  # number of cols in plots
 
 
 def show_classification(labels, data, data_type, input_cmap="jet"):
-    """ Shows classification of pixels after segmentation
-    Args:
-        labels (np.array): matrix of classification per pixel
-        data (np.array): data
-        data_type (srt): data type (QNM, AMFM, cAFM)
-        input_cmap (str): to use different color map
+    """
+    Shows classification of pixels after segmentation
+    
+    Parameters
+    ----------
+        labels : NumPy Array
+            matrix of classification per pixel
+        data : NumPy Array
+            matrix containing user entered SPM data
+        data_type : str
+            string designating data type (QNM, AMFM, cAFM)
+        input_cmap : str
+            string designating matplotlib colormap to use
+        
+    Returns
+    ----------
     """
     props = INFO[data_type]["properties"]
 
@@ -367,10 +377,15 @@ def cmap_discretize(cmap, N):
     Return a discrete colormap from the continuous colormap cmap.
 
     Parameters
+    ----------
         cmap : str
             colormap instance.
         N : int
-            umber of colors.
+            number of colors.
+            
+    Returns
+    ----------
+        discretized version of continuous colormap
     """
     colors_i = np.concatenate((np.linspace(0, 1.0, N), (0.0, 0.0, 0.0, 0.0)))
     colors_rgba = cmap(colors_i)

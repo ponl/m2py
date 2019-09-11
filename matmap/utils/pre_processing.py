@@ -25,7 +25,7 @@ def show_property_distributions(data, data_type, outliers=None):
     Parameters
     ----------
         data : NumPy Array
-            SPM data supplied by the user
+            matrix of SPM data supplied by user
         data_type : str
             data type corresponding to config.data_info keyword (QNM, AMFM, cAFM)
         outliers : NumPy Array
