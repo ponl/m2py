@@ -1,4 +1,4 @@
-# MatMAP: Materials Morphology Analysis Package
+# m2py: Materials Morphology Python Package
 
 ### Installation
 
