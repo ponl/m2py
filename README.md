@@ -1,4 +1,12 @@
-**Results from the MATDAT 2018 Hackathon**
+# m2py: Materials Morphology Python Package
+
+### Installation
+
+### Usage
+
+### Background
+
+#### Results from the MATDAT 2018 Hackathon
 
 Wesley Tatum, Diego Torrejon, Patrick O’Neil
 

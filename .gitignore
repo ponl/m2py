@@ -25,6 +25,9 @@ wheels/
 *.egg
 MANIFEST
 
+# mvim temporary files
+*.swp
+
 # PyInstaller
 #  Usually these files are written by a python script from a template
 #  before PyInstaller builds the exe, so as to inject date/other infos into it.
@@ -71,10 +74,12 @@ target/
 
 # Jupyter Notebook
 .ipynb_checkpoints
-ssts/Anton_OPV_analysis.ipynb
-ssts/Manuscript_data.ipynb
-ssts/scripts/ssts_helperfunc_lab.ipynb
-ssts/scripts/SSTS_data_analysis.ipynb
+ipynb/Manuscript_data.ipynb
+ipynb/Anton_OPV_analysis.ipynb
+ipynb/pyUSID_helper_functions.ipynb
+matmap/scripts/matmap_helperfunc_lab.ipynb
+matmap/scripts/MatMAP_data_analysis.ipynb
+matmap/scripts/Anton_OPV_analysis.ipynb
 
 # pyenv
 .python-version
