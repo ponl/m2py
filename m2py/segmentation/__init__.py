@@ -1,6 +1,6 @@
 import logging
 
-from matmap.segmentation.segmentation_gmm import SegmenterGMM
+from m2py.segmentation.segmentation_gmm import SegmenterGMM
 
 
 logger = logging.getLogger(__name__)
