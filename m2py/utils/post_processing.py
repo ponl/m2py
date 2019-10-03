@@ -269,7 +269,7 @@ def show_overlaid_distribution(probs, data, data_type, outliers=None):
         cnt += 1
         prob = probs[:, :, i]
         masked = np.ma.masked_where(outliers == 1, prob)
-        m = ax.imshow(probs[:, :, i], vmin=0, vmax=1)
+        m = ax.imshow(masked, vmin=0, vmax=1)
         pyplot.colorbar(m, fraction=0.046, pad=0.04)
 
     pyplot.show()
