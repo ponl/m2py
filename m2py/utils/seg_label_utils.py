@@ -131,12 +131,17 @@ def fill_out_zeros(labels, zeros):
         labels : int
             closest non-outlier value.
     """
+    if len(labels.shape) < 3:
+        labels = np.expand_dims(labels, axis=2)
+
+    c = labels.shape[2]
     x, y = np.nonzero(zeros)
     for i, j in zip(x, y):
-        value = get_closest_value(labels, zeros, i, j)
-        labels[i, j] = value
+        for k in range(c):
+            value = get_closest_value(labels[:,:,k], zeros, i, j)
+            labels[i, j, k] = value
 
-    return labels
+    return np.squeeze(labels)
 
 
 def get_significant_labels(labels, bg_contrast_flag=False):

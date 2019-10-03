@@ -274,6 +274,48 @@ def smooth_outliers_from_data(data, outliers):
     return no_outliers_data
 
 
+def remove_noisy_channels(data, data_properties):
+    """
+    Removes noisy channels from data.
+    
+    Parameters
+    ----------
+        data : NumPy Array
+            SPM data supplied by the user
+        data_properties : dict
+            channel properties of the SPM data
+            
+    Returns
+    ----------
+        data : NumPy Array
+            SPM data supplied by the user
+        data_properties : dict
+            channel properties of the SPM data
+    """
+    buckets = 100  # TODO optimize
+
+    remove_channels = []
+    c = data.shape[2]
+    for i in range(c):
+        channel = data[:, :, i].flatten()
+        counts, bins = np.histogram(channel, buckets)
+        norm_counts = counts / sum(counts) * 100
+        max_id, max_count = max(zip(range(buckets), norm_counts), key=lambda k: k[1])
+
+        right_diff = max_count - norm_counts[min(max_id + 1, buckets - 1)]
+        left_diff = max_count - norm_counts[max(max_id - 1, 0)]
+        max_diff = max(right_diff, left_diff)
+        if max_diff > 10:  # TODO optimize
+            print(f"Removing channel: {data_properties[i]}")
+            remove_channels.append(i)
+
+    for i in remove_channels[::-1]:
+        data = np.delete(data, i, axis=2)
+        del data_properties[i]
+
+    return data, data_properties
+
+
 ## Frequency removal
 def apply_frequency_removal(data, data_type, compression_percent=95):
     """
