@@ -17,6 +17,17 @@ NUM_COLS = 2  # number of cols in plots
 ## Plotting methods
 
 
+def store_results(labels, output_file):
+    """
+    Store results.
+
+    Args:
+        labels (NumPy Array): matrix of classification per pixel
+        output_file (str): output file for results
+    """
+    np.save(output_file, labels)
+
+
 def show_classification(labels, data, data_type, input_cmap="jet"):
     """
     Shows classification of pixels after segmentation
@@ -37,6 +48,7 @@ def show_classification(labels, data, data_type, input_cmap="jet"):
     """
     props = INFO[data_type]["properties"]
 
+    labels = slu.relabel(labels)
     unique_labels = slu.get_unique_labels(labels)
     num_labels = len(unique_labels)
 
@@ -121,10 +133,10 @@ def show_classification_distributions(labels, data, data_type, title_flag=True):
     pyplot.show()
 
 
-def show_grain_area_distribution(labels, data_type, data_subtype=None):
+def show_grain_area_distribution(labels, data_type, data_subtype):
     """
     Computes a histogram of the number of pixels per label
-    
+
     Parameters
     ----------
         labels : NumPy Array
@@ -133,15 +145,12 @@ def show_grain_area_distribution(labels, data_type, data_subtype=None):
             SPM data supplied by the user
         data_type : str
             data type corresponding to config.data_info keyword (QNM, AMFM, cAFM)
-            
+
     Returns
     ----------
-    
+
     """
-    if data_subtype is None:
-        sample_area = INFO[data_type]["sample_size"] ** 2
-    else:
-        sample_area = INFO[data_type]["sample_size"][data_subtype] ** 2
+    sample_area = INFO[data_type]["sample_size"][data_subtype] ** 2
 
     unique_labels = slu.get_unique_labels(labels)
     grain_areas = sorted([np.sum(labels == l) for l in unique_labels], reverse=True)
