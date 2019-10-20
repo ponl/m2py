@@ -176,6 +176,23 @@ class SegmenterGMM(object):
         pca_components = data
         return pca_components
 
+    def store_pca_components(self, data, output_file):
+        """
+        Stores PCA components.
+
+        Args:
+            data (NumPy Array): Material properties array of shape (height, width, n_properties)
+            output_file (str): Output file for PCA components
+        """
+        if self.gmm is None:
+            logger.warning("Attempting to access model prior to fitting. You must call .fit() first.")
+            return None
+
+        h, w, c = data.shape
+        pca_components = self.get_pca_components(data)
+        pca_components = pca_components.reshape(h, w, self.embedding_dim)
+        np.save(output_file, pca_components)
+
     def get_probabilities(self, data, outliers=None):
         """
         Computes likelihood of pixel for all classes.
