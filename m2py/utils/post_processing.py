@@ -48,7 +48,6 @@ def show_classification(labels, data, data_type, input_cmap="jet"):
     """
     props = INFO[data_type]["properties"]
 
-    labels = slu.relabel(labels)
     unique_labels = slu.get_unique_labels(labels)
     num_labels = len(unique_labels)
 

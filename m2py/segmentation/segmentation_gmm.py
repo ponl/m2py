@@ -6,6 +6,7 @@ from skimage import measure
 from sklearn.decomposition import PCA
 from sklearn.mixture import GaussianMixture
 from sklearn.preprocessing import StandardScaler
+from m2py.utils import seg_label_utils as slu
 
 
 logger = logging.getLogger(__name__)
@@ -120,6 +121,7 @@ class SegmenterGMM(object):
         if outliers is not None:
             labels *= 1 - outliers  # outliers map to label 0
 
+        labels = slu.relabel(labels)
         return labels
 
     def fit_transform(self, data, outliers=None):
@@ -263,4 +265,5 @@ class SegmenterGMM(object):
     def get_grains(labels):
         """ Segments classes labels into grain labels """
         new_labels = measure.label(labels, connectivity=2, background=0)
+        new_labels = slu.relabel(new_labels)
         return new_labels

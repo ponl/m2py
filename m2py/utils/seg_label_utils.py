@@ -30,7 +30,7 @@ def relabel(labels):
         labels : NumPy Array
             matrix of classification per pixel in order
     """
-    unique_labels = get_unique_labels(labels)
+    unique_labels = get_unique_labels(labels)[::-1]
     max_label = max(unique_labels)
     for i, l in enumerate(unique_labels):
         labels[labels == l] = max_label + i + 1
@@ -199,6 +199,7 @@ def get_significant_labels(labels, bg_contrast_flag=False):
 
         new_labels[labels == j] += color_step
 
+    new_labels = relabel(new_labels)
     return new_labels
 
 
