@@ -309,11 +309,12 @@ def remove_noisy_channels(data, data_properties):
             print(f"Removing channel: {data_properties[i]}")
             remove_channels.append(i)
 
+    new_data_properties = data_properties.copy()
     for i in remove_channels[::-1]:
         data = np.delete(data, i, axis=2)
-        del data_properties[i]
+        del new_data_properties[i]
 
-    return data, data_properties
+    return data, new_data_properties
 
 
 ## Frequency removal

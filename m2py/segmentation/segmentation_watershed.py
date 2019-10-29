@@ -3,6 +3,7 @@ import logging
 import numpy as np
 from scipy.signal import convolve2d
 import m2py.segmentation.persistence_watershed_algorithm as pws
+from m2py.utils import seg_label_utils as slu
 
 logger = logging.getLogger(__name__)
 
@@ -69,6 +70,7 @@ class SegmenterWatershed(object):
         if outliers is not None:
             labels *= 1 - outliers  # outliers map to label 0 which are borders between grains
 
+        labels = slu.relabel(labels)
         return labels
 
     def fit_transform(self, data, outliers=None, pers_thresh=DEF_THRESH):

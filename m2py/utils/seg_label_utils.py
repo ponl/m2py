@@ -12,9 +12,33 @@ and arrays so that they may be iterably accessed and analyzed.
 """
 
 LABEL_THRESH = 10  # each label must have more than this number of pixels
-BG_THRESH = 10000
+BG_THRESH = 100000 # NOTE 10k for smaller grains and 100k for bigger grains
 
 data_channels = config.data_info["QNM"]["properties"]
+
+def relabel(labels):
+    """
+    Relabel labels in order
+
+    Parameters
+    ----------
+        labels : NumPy Array
+            matrix of classification per pixel
+
+    Returns
+    ----------
+        labels : NumPy Array
+            matrix of classification per pixel in order
+    """
+    unique_labels = get_unique_labels(labels)[::-1]
+    max_label = max(unique_labels)
+    for i, l in enumerate(unique_labels):
+        labels[labels == l] = max_label + i + 1
+
+    for l in get_unique_labels(labels):
+        labels[labels == l] -= max_label
+
+    return labels
 
 
 def get_unique_labels(labels):
@@ -174,6 +198,9 @@ def get_significant_labels(labels, bg_contrast_flag=False):
             color_step = num_labels - index
 
         new_labels[labels == j] += color_step
+
+    if not bg_contrast_flag:
+        new_labels = relabel(new_labels)
 
     return new_labels
 
