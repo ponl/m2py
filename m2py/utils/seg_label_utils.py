@@ -199,7 +199,9 @@ def get_significant_labels(labels, bg_contrast_flag=False):
 
         new_labels[labels == j] += color_step
 
-    new_labels = relabel(new_labels)
+    if not bg_contrast_flag:
+        new_labels = relabel(new_labels)
+
     return new_labels
 
 
