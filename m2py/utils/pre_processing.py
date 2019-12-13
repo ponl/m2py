@@ -6,6 +6,7 @@ from matplotlib import pyplot, colors
 from scipy.fftpack import fft2, ifft2, fftshift, ifftshift
 
 from m2py.utils import config
+from m2py.utils import utils
 
 INFO = config.data_info
 
@@ -164,7 +165,7 @@ def show_correlations(num_props, data_type, path):
 ## Outlier detection and filtering methods
 
 
-def extract_outliers(data, data_type, threshold=2.5):
+def extract_outliers(data, data_type, threshold=2.5, chip_size=512, stride=512):
     """
     Finds outliers from data
 
@@ -176,7 +177,11 @@ def extract_outliers(data, data_type, threshold=2.5):
             data type corresponding to config.data_info keyword (QNM, AMFM, cAFM)
         threshold : float
             z-score threshold at which to flag a pixel as an outlier
-        
+        chip_size : int
+            size of generated chips
+        stride: int
+            number of pixels skipped over to generate adjacent chips
+
     Returns
     ----------
         outliers : NumPy Array
@@ -188,11 +193,37 @@ def extract_outliers(data, data_type, threshold=2.5):
     else:
         return None
 
-    x = data[:, :, height_index]
+    prop_data = data[:, :, height_index]
+    prop_chips = utils.generate_chips_from_data(prop_data, chip_size, stride)
+    outlier_chips = {}
 
+    for key, chip in prop_chips.items():
+        temp_outliers = apply_outlier_extraction(chip, threshold)
+        outlier_chips[key] = temp_outliers
+
+    outliers = utils.stitch_up_chips(outlier_chips)
+    return outliers
+
+
+def apply_outlier_extraction(prop_data, threshold=2.5):
+    """
+    Apply outlier extraction routine to single channel data array.
+
+    Parameters
+    ----------
+        data : NumPy Array
+            SPM data (for a single property) supplied by the user
+        threshold : float
+            z-score threshold at which to flag a pixel as an outlier
+
+    Returns
+    ----------
+        outliers : NumPy Array
+            boolean, 2D array of outlier flags (1's) for functions to pass over
+    """
     # Smooth data
     flt = np.array([[0.5, 0.5, 0.5], [0.5, 1, 0.5], [0.5, 0.5, 0.5]])
-    y = signal.convolve2d(x, flt, boundary="symm", mode="same")
+    y = signal.convolve2d(prop_data, flt, boundary="symm", mode="same")
 
     # Compute z-scores
     u = np.mean(y)
@@ -200,7 +231,9 @@ def extract_outliers(data, data_type, threshold=2.5):
     z = np.abs((u - y) / s)
 
     # Threshold by z-score
-    return z > threshold
+    outliers = z > threshold
+
+    return outliers
 
 
 def show_outliers(data, data_type, outliers):
