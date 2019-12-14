@@ -165,7 +165,7 @@ def show_correlations(num_props, data_type, path):
 ## Outlier detection and filtering methods
 
 
-def extract_outliers(data, data_type, threshold=2.5, chip_size=512, stride=512):
+def extract_outliers(data, data_type, prop, threshold=2.5, chip_size=512, stride=512):
     """
     Finds outliers from data
 
@@ -175,6 +175,8 @@ def extract_outliers(data, data_type, threshold=2.5, chip_size=512, stride=512):
             SPM data supplied by the user
         data_type : str
             data type corresponding to config.data_info keyword (QNM, AMFM, cAFM)
+        prop : str
+            data property to be used for outlier detection
         threshold : float
             z-score threshold at which to flag a pixel as an outlier
         chip_size : int
@@ -188,12 +190,13 @@ def extract_outliers(data, data_type, threshold=2.5, chip_size=512, stride=512):
             boolean, 2D array of outlier flags (1's) for functions to pass over
     """
     props = INFO[data_type]["properties"]
-    if "Height" in props:
-        height_index = props.index("Height")
+    if prop in props:
+        prop_index = props.index(prop)
     else:
+        print(f"Property {prop} not found")
         return None
 
-    prop_data = data[:, :, height_index]
+    prop_data = data[:, :, prop_index]
     prop_chips = utils.generate_chips_from_data(prop_data, chip_size, stride)
     outlier_chips = {}
 
@@ -236,7 +239,7 @@ def apply_outlier_extraction(prop_data, threshold=2.5):
     return outliers
 
 
-def show_outliers(data, data_type, outliers):
+def show_outliers(data, data_type, prop, outliers):
     """
     Plots data properties and outliers
     
@@ -246,6 +249,8 @@ def show_outliers(data, data_type, outliers):
             SPM data supplied by the user
         data_type : str
             data type corresponding to config.data_info keyword (QNM, AMFM, cAFM)
+        prop : str
+            data property to be used for outlier extraction
         outliers : NumPy Array
             boolean, 2D array of outlier flags (1's) for functions to pass over
         
@@ -254,28 +259,30 @@ def show_outliers(data, data_type, outliers):
     
     """
     props = INFO[data_type]["properties"]
-    if "Height" in props:
-        height_index = props.index("Height")
+    if prop in props:
+        prop_index = props.index(prop)
     else:
+        print(f"Property {prop} not found")
         return
 
     fig = pyplot.figure(figsize=(15, 4))
 
     pyplot.subplot(1, 3, 1)
-    m = pyplot.imshow(data[:, :, height_index], aspect="auto")
-    pyplot.title("Height")
+    m = pyplot.imshow(data[:, :, prop_index], aspect="auto")
+    pyplot.title(prop)
     pyplot.colorbar(m, fraction=0.046, pad=0.04)
 
     pyplot.subplot(1, 3, 2)
     pyplot.imshow(outliers, aspect="auto")
-    pyplot.title("Height Outliers")
+    pyplot.title(f"{prop} Outliers")
 
     no_outliers_data = np.copy(data)
-    height_data = no_outliers_data[:, :, height_index]
-    height_data[outliers == 1] = np.mean(height_data)
+    prop_data = no_outliers_data[:, :, prop_index]
+    prop_data[outliers == 1] = np.mean(prop_data)
+
     pyplot.subplot(1, 3, 3)
-    m = pyplot.imshow(height_data, aspect="auto")
-    pyplot.title("Height")
+    m = pyplot.imshow(prop_data, aspect="auto")
+    pyplot.title(prop)
     pyplot.colorbar(m, fraction=0.046, pad=0.04)
 
     pyplot.tight_layout()
