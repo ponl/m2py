@@ -6,6 +6,7 @@ from matplotlib import pyplot, colors
 from scipy.fftpack import fft2, ifft2, fftshift, ifftshift
 
 from m2py.utils import config
+from m2py.utils import utils
 
 INFO = config.data_info
 
@@ -164,7 +165,7 @@ def show_correlations(num_props, data_type, path):
 ## Outlier detection and filtering methods
 
 
-def extract_outliers(data, data_type, threshold=2.5):
+def extract_outliers(data, data_type, prop, threshold=2.5, chip_size=512, stride=512):
     """
     Finds outliers from data
 
@@ -174,25 +175,58 @@ def extract_outliers(data, data_type, threshold=2.5):
             SPM data supplied by the user
         data_type : str
             data type corresponding to config.data_info keyword (QNM, AMFM, cAFM)
+        prop : str
+            data property to be used for outlier detection
         threshold : float
             z-score threshold at which to flag a pixel as an outlier
-        
+        chip_size : int
+            size of generated chips
+        stride: int
+            number of pixels skipped over to generate adjacent chips
+
     Returns
     ----------
         outliers : NumPy Array
             boolean, 2D array of outlier flags (1's) for functions to pass over
     """
     props = INFO[data_type]["properties"]
-    if "Height" in props:
-        height_index = props.index("Height")
+    if prop in props:
+        prop_index = props.index(prop)
     else:
+        print(f"Property {prop} not found")
         return None
 
-    x = data[:, :, height_index]
+    prop_data = data[:, :, prop_index]
+    prop_chips = utils.generate_chips_from_data(prop_data, chip_size, stride)
+    outlier_chips = {}
 
+    for key, chip in prop_chips.items():
+        temp_outliers = apply_outlier_extraction(chip, threshold)
+        outlier_chips[key] = temp_outliers
+
+    outliers = utils.stitch_up_chips(outlier_chips)
+    return outliers
+
+
+def apply_outlier_extraction(prop_data, threshold=2.5):
+    """
+    Apply outlier extraction routine to single channel data array.
+
+    Parameters
+    ----------
+        data : NumPy Array
+            SPM data (for a single property) supplied by the user
+        threshold : float
+            z-score threshold at which to flag a pixel as an outlier
+
+    Returns
+    ----------
+        outliers : NumPy Array
+            boolean, 2D array of outlier flags (1's) for functions to pass over
+    """
     # Smooth data
     flt = np.array([[0.5, 0.5, 0.5], [0.5, 1, 0.5], [0.5, 0.5, 0.5]])
-    y = signal.convolve2d(x, flt, boundary="symm", mode="same")
+    y = signal.convolve2d(prop_data, flt, boundary="symm", mode="same")
 
     # Compute z-scores
     u = np.mean(y)
@@ -200,10 +234,12 @@ def extract_outliers(data, data_type, threshold=2.5):
     z = np.abs((u - y) / s)
 
     # Threshold by z-score
-    return z > threshold
+    outliers = z > threshold
+
+    return outliers
 
 
-def show_outliers(data, data_type, outliers):
+def show_outliers(data, data_type, prop, outliers):
     """
     Plots data properties and outliers
     
@@ -213,6 +249,8 @@ def show_outliers(data, data_type, outliers):
             SPM data supplied by the user
         data_type : str
             data type corresponding to config.data_info keyword (QNM, AMFM, cAFM)
+        prop : str
+            data property to be used for outlier extraction
         outliers : NumPy Array
             boolean, 2D array of outlier flags (1's) for functions to pass over
         
@@ -221,28 +259,30 @@ def show_outliers(data, data_type, outliers):
     
     """
     props = INFO[data_type]["properties"]
-    if "Height" in props:
-        height_index = props.index("Height")
+    if prop in props:
+        prop_index = props.index(prop)
     else:
+        print(f"Property {prop} not found")
         return
 
     fig = pyplot.figure(figsize=(15, 4))
 
     pyplot.subplot(1, 3, 1)
-    m = pyplot.imshow(data[:, :, height_index], aspect="auto")
-    pyplot.title("Height")
+    m = pyplot.imshow(data[:, :, prop_index], aspect="auto")
+    pyplot.title(prop)
     pyplot.colorbar(m, fraction=0.046, pad=0.04)
 
     pyplot.subplot(1, 3, 2)
     pyplot.imshow(outliers, aspect="auto")
-    pyplot.title("Height Outliers")
+    pyplot.title(f"{prop} Outliers")
 
     no_outliers_data = np.copy(data)
-    height_data = no_outliers_data[:, :, height_index]
-    height_data[outliers == 1] = np.mean(height_data)
+    prop_data = no_outliers_data[:, :, prop_index]
+    prop_data[outliers == 1] = np.mean(prop_data)
+
     pyplot.subplot(1, 3, 3)
-    m = pyplot.imshow(height_data, aspect="auto")
-    pyplot.title("Height")
+    m = pyplot.imshow(prop_data, aspect="auto")
+    pyplot.title(prop)
     pyplot.colorbar(m, fraction=0.046, pad=0.04)
 
     pyplot.tight_layout()

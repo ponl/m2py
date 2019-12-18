@@ -31,7 +31,7 @@ def store_results(labels, output_file):
 def show_classification(labels, data, data_type, input_cmap="jet"):
     """
     Shows classification of pixels after segmentation
-    
+
     Parameters
     ----------
         labels : NumPy Array
@@ -42,7 +42,7 @@ def show_classification(labels, data, data_type, input_cmap="jet"):
             string designating data type (QNM, AMFM, cAFM)
         input_cmap : str
             string designating matplotlib colormap to use
-        
+
     Returns
     ----------
     """
@@ -77,26 +77,30 @@ def show_classification(labels, data, data_type, input_cmap="jet"):
     pyplot.show()
 
 
-def show_classification_distributions(labels, data, data_type, title_flag=True):
+def show_classification_distributions(labels, data, outliers, data_type, title_flag=True):
     """
     Shows distributions of classes after segmentation
-    
+
     Parameters
     ----------
         labels : NumPy Array
             matrix of classification per pixel
         data : NumPy Array
             SPM data supplied by the user
+        outliers : NumPy Array
+            array of outlier pixels
         data_type : str
             data type corresponding to config.data_info keyword (QNM, AMFM, cAFM)
         title_flag : bool
             flag for plots to show titles or not
-            
+
     Returns
     ----------
-    
     """
     props = INFO[data_type]["properties"]
+
+    if outliers is None:
+        outliers = 0
 
     unique_labels = slu.get_unique_labels(labels)
     num_labels = len(unique_labels)
@@ -126,7 +130,9 @@ def show_classification_distributions(labels, data, data_type, title_flag=True):
         ax_r.set_title("Distributions")
         for index, j in enumerate(unique_labels):
             color_step = num_labels - (index + 1)
-            ax_r.hist(data[:, :, i][labels == j], NUM_BINS, alpha=ALPHA, density=True, color=cmap(color_step))
+            labels_wo_outliers = labels * (1 - outliers)
+            class_data = data[:, :, i][labels_wo_outliers == j]
+            ax_r.hist(class_data, NUM_BINS, alpha=ALPHA, density=True, color=cmap(color_step))
 
     pyplot.tight_layout()
     pyplot.show()
@@ -293,9 +299,11 @@ def show_classification_correlation(labels, data, data_type, title_flag=True, sa
             SPM data supplied by the user
         data_type : str
             data type corresponding to config.data_info keyword (QNM, AMFM, cAFM)
-        outliers : NumPy Array
-            boolean, 2D array of outlier flags (1's) for functions to pass over
-    
+        title_flag : bool
+            flag for plots to show titles or not
+        sample_flag : bool
+            flag to sample points for visualization
+
     Returns
     ----------
     
