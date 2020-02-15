@@ -168,7 +168,7 @@ def fill_out_zeros(labels, zeros):
     return np.squeeze(labels)
 
 
-def get_significant_labels(labels, bg_contrast_flag=False):
+def get_significant_labels(labels, bg_contrast_flag=False, label_thresh=LABEL_THRESH):
     """
     Shows classification of pixels after segmentation
     
@@ -185,7 +185,7 @@ def get_significant_labels(labels, bg_contrast_flag=False):
             matrix of classification per pixel for large components
     """
     unique_labels = get_unique_labels(labels)
-    grain_labels = [l for l in unique_labels if np.sum(labels == l) > LABEL_THRESH]
+    grain_labels = [l for l in unique_labels if np.sum(labels == l) > label_thresh]
     bg_labels = [l for l in grain_labels if np.sum(labels == l) > BG_THRESH]
     num_labels = len(grain_labels)
 
