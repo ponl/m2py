@@ -9,32 +9,20 @@ data_info{
             "sample_key_word": int,
             "sample_key_word": int,
         },
-    
     },
     ...
 }
 """
 
 data_info = {
-        "QNM": {
-            "properties": ["Adhesion", "Deformation", "Dissipation", "LogDMT", "Height", "Stiffness"],
-            "sample_size": {
-                "Backgrounded": 2,
-                "2ComponentFilms": 0.5,
-                "Nanowires": 5
-                }
-            },
-        "AMFM": {
-            "properties": ["Height", "Deformation", "Youngs Modulus", "Phase"],
-            "sample_size": {
-                "Nanowires": 2
-                }
-            },
-        "cAFM": {
-            "properties": ["Current", "Height"],
-            "sample_size": {
-                "Nanowires": 2
-                }
-            }
-        }
-
+    "QNM": {
+        "properties": ["Adhesion", "Deformation", "Dissipation", "LogDMT", "Height", "Stiffness"],
+        "sample_size": {"Backgrounded": 2, "2ComponentFilms": 0.5, "Nanowires": 5},
+    },
+    "AMFM": {"properties": ["Height", "Deformation", "Youngs Modulus", "Phase"], "sample_size": {"Nanowires": 2}},
+    "cAFM": {"properties": ["Current", "Height"], "sample_size": {"Nanowires": 2}},
+    "NEW": {
+        "properties": ["Zscale", "PFE", "Stiffness", "LogDMT", "Adhesion", "Deformation", "Dissipation", "Height"],
+        "sample_size": {"NA": 1},
+    },
+}
