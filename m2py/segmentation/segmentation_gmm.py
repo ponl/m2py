@@ -76,8 +76,7 @@ class SegmenterGMM(object):
 
         if outliers is not None:
             outliers = outliers.flatten()
-
-        data = SegmenterGMM.remove_outliers(data, outliers)
+            data = data[outliers == 0]
 
         if self.normalize:
             if self.zscale:
@@ -92,7 +91,6 @@ class SegmenterGMM(object):
 
         self.gmm = GaussianMixture(n_components=self.n_components, covariance_type="full")
         self.gmm.fit(data)
-
         return self
 
     def transform(self, data, outliers=None):
@@ -138,7 +136,6 @@ class SegmenterGMM(object):
                 a label corresponding to its segment.
         """
         gmm = self.fit(data, outliers)
-
         if gmm is None:
             return None
 
@@ -226,14 +223,6 @@ class SegmenterGMM(object):
         reciprocal_data = 1 / data
         reciprocal_data[data == 0] = 0
         return np.concatenate((data, abs_data, squared_data, cubed_data, reciprocal_data), axis=2)
-
-    @staticmethod
-    def remove_outliers(data, outliers):
-        if outliers is None:
-            return data
-
-        n_outlier = len(outliers)
-        return np.array([data[i] for i in range(n_outlier) if not outliers[i]])
 
     @staticmethod
     def get_windows(data, padding=3, flatten=True):

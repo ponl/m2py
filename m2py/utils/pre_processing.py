@@ -412,7 +412,7 @@ def apply_frequency_removal(data, data_type, compression_percent=95):
     num_cols = 3 * NUM_COLS
     num_rows = int(np.ceil(num_plots / num_cols))
 
-    fig = pyplot.figure(figsize=(14, 21), dpi=80, facecolor="w", edgecolor="k")
+    fig = pyplot.figure(figsize=(15, 10), dpi=80, facecolor="w", edgecolor="k")
     count = 1
     for k in range(c):
         prop = data[:, :, k]
