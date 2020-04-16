@@ -144,16 +144,17 @@ def stitch_up_chips(chips):
     len_shape = len(first_chip.shape)
     num_channels = first_chip.shape[2] if len_shape == 3 else 1
 
-    full_image_size = chip_size + max(chips.keys(), key=lambda k: k[0])[0]
+    full_image_height = chip_size + max(chips.keys(), key=lambda k: k[0])[0]
+    full_image_width = chip_size + max(chips.keys(), key=lambda k: k[1])[1]
 
-    full_image = np.zeros((full_image_size, full_image_size, num_channels), dtype="int64")
-    intersection = np.zeros((full_image_size, full_image_size, 1), dtype="int64")
+    full_image = np.zeros((full_image_height, full_image_width, num_channels), dtype="int64")
+    intersection = np.zeros((full_image_height, full_image_width, 1), dtype="int64")
     for (i, j), chip in chips.items():
         full_image[i : i + chip_size, j : j + chip_size, :] += chip.reshape(chip_size, chip_size, num_channels)
         intersection[i : i + chip_size, j : j + chip_size, 0] += 1
 
     full_image = full_image / intersection
     full_image = full_image.astype("int64")
-    full_image = reshape_image(full_image, full_image_size, full_image_size, num_channels, len_shape)
+    full_image = reshape_image(full_image, full_image_height, full_image_width, num_channels, len_shape)
 
     return full_image
