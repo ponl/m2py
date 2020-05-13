@@ -2,9 +2,9 @@
 
 ## Contributors
 
-Wesley Tatum, PhD Student at University of Washington MSE Department
-Diego Torrejon, Staff Machine Learning Engineer at BlackSky
-Patrick O’Neil, Director of Machine Learning and Artificial Intelligence at BlackSky
+- Wesley Tatum, PhD Student at University of Washington MSE Department
+- Diego Torrejon, Staff Machine Learning Engineer at BlackSky
+- Patrick O’Neil, Director of Machine Learning and Artificial Intelligence at BlackSky
 
 ## Installation
 Clone this repository
