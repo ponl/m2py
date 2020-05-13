@@ -6,6 +6,10 @@
 - Diego Torrejon, Staff Machine Learning Engineer at BlackSky
 - Patrick O’Neil, Director of Machine Learning and Artificial Intelligence at BlackSky
 
+## Requirements
+
+You need python3.
+
 ## Installation
 
 ### Through github:
