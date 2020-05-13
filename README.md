@@ -8,7 +8,7 @@
 
 ## Requirements
 
-You need python3.
+You need python3
 
 ## Installation
 
