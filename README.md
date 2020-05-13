@@ -17,7 +17,7 @@
 `pip install m2py`
 
 ## Usage
-At the moment, we are offering two tutorials found under the Tutorials directory. There is an introductory tutorial showing the basic processing capabilities of m2py. The other tutorial is more advanced, showing how users can use current m2py capabilities to make them suitable for their own applications.
+At the moment, we are offering two introductory tutorials found under the `tutorials` directory. There is a basic tutorial showing the main processing capabilities of m2py. There's also an advanced tutorial showing how users can use current m2py capabilities to make them suitable for their own applications.
 
 ## Background
 
