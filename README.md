@@ -14,7 +14,6 @@ pip install -r requirements.txt
 
 
 ## Background
-#### (Results from the MATDAT 2018 Hackathon)
 
 Thin films of semiconducting materials will enable stretchable and flexible electronic
 devices, but these thin films are currently stochastic and inconsistent in their properties and
