@@ -1,14 +1,20 @@
 # m2py: Materials Morphology Python Package
 
-### Installation
+## Contributors
 
-### Usage
+Wesley Tatum, PhD Student at University of Washington MSE Department
+Diego Torrejon, Staff Machine Learning Engineer at BlackSky
+Patrick O’Neil, Director of Machine Learning and Artificial Intelligence at BlackSky
 
-### Background
+## Installation
+Clone this repository
+pip install -r requirements.txt
 
-#### Results from the MATDAT 2018 Hackathon
+## Usage
 
-Wesley Tatum, Diego Torrejon, Patrick O’Neil
+
+## Background
+#### (Results from the MATDAT 2018 Hackathon)
 
 Thin films of semiconducting materials will enable stretchable and flexible electronic
 devices, but these thin films are currently stochastic and inconsistent in their properties and
