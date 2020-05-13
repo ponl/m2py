@@ -7,11 +7,17 @@
 - Patrick O’Neil, Director of Machine Learning and Artificial Intelligence at BlackSky
 
 ## Installation
+
+### Through github:
 `Clone this repository`
+
 `pip install -r requirements.txt`
 
-## Usage
+### Through pip:
+`pip install m2py`
 
+## Usage
+Currently, we are offering two tutorials under the Tutorials directory. There is an introductory tutorial showing the main segmentation capabilities of m2py. The other tutorial is more advanced, showing how one can evolve from m2py capabilities and make them suitable for their own applications.
 
 ## Background
 
