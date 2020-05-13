@@ -9,7 +9,7 @@
 ## Installation
 
 ### Through github:
-`Clone this repository`
+`Clone or download this repository`
 
 `pip install -r requirements.txt`
 
@@ -17,7 +17,7 @@
 `pip install m2py`
 
 ## Usage
-Currently, we are offering two tutorials under the Tutorials directory. There is an introductory tutorial showing the main segmentation capabilities of m2py. The other tutorial is more advanced, showing how one can evolve from m2py capabilities and make them suitable for their own applications.
+At the moment, we are offering two tutorials found under the Tutorials directory. There is an introductory tutorial showing the basic processing capabilities of m2py. The other tutorial is more advanced, showing how users can use current m2py capabilities to make them suitable for their own applications.
 
 ## Background
 
