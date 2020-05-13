@@ -7,8 +7,8 @@
 - Patrick O’Neil, Director of Machine Learning and Artificial Intelligence at BlackSky
 
 ## Installation
-Clone this repository
-pip install -r requirements.txt
+`Clone this repository`
+`pip install -r requirements.txt`
 
 ## Usage
 
