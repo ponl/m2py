@@ -8,7 +8,7 @@
 
 ## Requirements
 
-You need python3
+You need Python 3.6 or later to work with m2py.
 
 ## Installation
 
