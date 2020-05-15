@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="m2py",  # Replace with your own username
-    version="0.0.3",
+    version="0.0.4",
     author="Diego Torrejon",
     author_email="diego.torrejon.medina@gmail.com",
     description="Materials Morphology Python Package",
