@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import pyplot, colors, cm
+from skimage import morphology
 
 from m2py.utils import config
 from m2py.utils import pre_processing
@@ -14,9 +15,6 @@ NUM_BINS = 30  # number of bins in histograms
 NUM_COLS = 2  # number of cols in plots
 
 
-## Plotting methods
-
-
 def store_results(labels, output_file):
     """
     Store results.
@@ -26,6 +24,9 @@ def store_results(labels, output_file):
         output_file (str): output file for results
     """
     np.save(output_file, labels)
+
+
+## Plotting methods
 
 
 def show_classification(labels, data, data_type, input_cmap="jet"):
@@ -194,7 +195,7 @@ def show_grain_area_distribution(labels, data_type, data_subtype):
 def show_distributions_together(labels, data, data_type, input_cmap):
     """
     Shows distributions of classes after segmentation
-    
+
     Parameters
     ----------
         labels : NumPy Array
@@ -205,10 +206,10 @@ def show_distributions_together(labels, data, data_type, input_cmap):
             data type corresponding to config.data_info keyword (QNM, AMFM, cAFM)
         input_cmap : str
             specifies which color map to use
-            
+
     Returns
     ----------
-    
+
     """
     props = INFO[data_type]["properties"]
 
@@ -292,7 +293,7 @@ def show_overlaid_distribution(probs, data, data_type, outliers=None):
 def show_classification_correlation(labels, data, data_type, title_flag=True, sample_flag=True):
     """
     Plots the correlation of data properties after classification
-    
+
     Parameters
     ----------
         data : NumPy Array
@@ -306,7 +307,7 @@ def show_classification_correlation(labels, data, data_type, title_flag=True, sa
 
     Returns
     ----------
-    
+
     """
     props = INFO[data_type]["properties"]
 
@@ -361,6 +362,68 @@ def show_classification_correlation(labels, data, data_type, title_flag=True, sa
     pyplot.show()
 
 
+def get_gmm_background_label(gmm_labels, connected_labels):
+    """
+    Gets the GMM backgound comoponent using connected components information. The background component will
+    be the one with the fewest connected components.
+
+    Parameters
+    ---------
+        gmm_labels : NumPy Array
+            GMM labeling
+        connected_labels : NumPy Array
+            connected components labeling
+
+    Returns
+    ----------
+        bg_label : int
+            GMM background label
+
+    """
+
+    return min(list(np.unique(gmm_labels)), key=lambda k: np.size(np.unique(connected_labels[gmm_labels == k])))
+
+
+def applies_morphological_cleanup(labels, bg_label, morph_radius=5, morph_min_size=25):
+    """
+    Applies morphological cleanup to labeling assignment per component / grain.
+
+    Parameters
+    ---------
+        labels : NumPy Array
+            labeling assignment
+        bg_label : int
+            GMM background label
+        morph_radius : int
+            disk radius for the morphological orperation
+        morph_min_size : int
+            remove small objects smaller than this value
+
+    Returns
+    ----------
+        clean_labels : NumPy Array
+            labeling after morphological cleanup
+
+    """
+    components = slu.get_unique_labels(labels)
+    components.remove(bg_label)
+
+    # Initialize clean labels as bacdground
+    clean_labels = (labels == bg_label) * bg_label
+
+    for i in components:  # non-background gmm components in increasing order
+        gmm_labels = labels == i
+
+        clean_gmm_labels = morphology.binary_opening(gmm_labels, morphology.disk(morph_radius))
+        clean_gmm_labels = morphology.remove_small_objects(clean_gmm_labels, min_size=morph_min_size)
+        clean_gmm_labels = clean_gmm_labels.astype(np.uint8)
+
+        clean_labels[clean_gmm_labels == 1] = i
+        clean_labels[(clean_gmm_labels == 0) * gmm_labels] = bg_label
+
+    return clean_labels
+
+
 # NOTE Auxilliary methods for creating discrete colorbar
 def colorbar_index(ncolors, cmap):
     """
@@ -398,7 +461,7 @@ def cmap_discretize(cmap, N):
             colormap instance.
         N : int
             number of colors.
-            
+
     Returns
     ----------
         discretized version of continuous colormap

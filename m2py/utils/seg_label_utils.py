@@ -184,7 +184,6 @@ def get_significant_labels(labels, label_thresh=10, bg_thresh=None):
         new_labels : NumPy Array
             matrix of classification per pixel for large components
     """
-    print(label_thresh)
     unique_labels = get_unique_labels(labels)
     grain_labels = [l for l in unique_labels if np.sum(labels == l) > label_thresh]
     num_labels = len(grain_labels)
