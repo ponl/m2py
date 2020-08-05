@@ -31,10 +31,10 @@ def show_property_distributions(data, data_type, outliers=None):
             data type corresponding to config.data_info keyword (QNM, AMFM, cAFM)
         outliers : NumPy Array
             boolean, 2D array of outlier flags (1's) for functions to pass over
-    
+
     Returns
     ----------
-    
+
     """
     props = INFO[data_type]["properties"]
 
@@ -62,12 +62,12 @@ def show_property_distributions(data, data_type, outliers=None):
 def get_correlations(path):
     """
     Computes correlation for all files in path
-    
+
     Parameters
     ----------
         path : str
             data directory
-    
+
     Returns
     ----------
         cors :list
@@ -94,7 +94,7 @@ def get_correlations(path):
 def get_correlation_values(cors, r, c):
     """
     Gets correlation between properties r and c for all files
-    
+
     Parameters
     ----------
         cors : list
@@ -103,7 +103,7 @@ def get_correlation_values(cors, r, c):
             first property index
         c : int
             second property index
-            
+
     Returns
     ----------
         rc_cors (list): correlation between properties r and c per file
@@ -115,7 +115,7 @@ def get_correlation_values(cors, r, c):
 def show_correlations(num_props, data_type, path):
     """
     Plots correlations between all properties
-    
+
     Parameters
     ----------
         num_props : int
@@ -124,10 +124,10 @@ def show_correlations(num_props, data_type, path):
             data type corresponding to config.data_info keyword (QNM, AMFM, cAFM)
         path : str
             data directory
-        
+
     Returns
     ----------
-    
+
     """
     props = INFO[data_type]["properties"]
 
@@ -165,9 +165,47 @@ def show_correlations(num_props, data_type, path):
 ## Outlier detection and filtering methods
 
 
+def extract_outliers_from_all_properties(data, data_type, threshold=2.5, chip_size=512, stride=512):
+    """
+    Finds outliers from all data properties
+
+    Parameters
+    ----------
+        data : NumPy Array
+            SPM data supplied by the user
+        data_type : str
+            data type corresponding to config.data_info keyword (QNM, AMFM, cAFM)
+        threshold : float
+            z-score threshold at which to flag a pixel as an outlier
+        chip_size : int
+            size of generated chips
+        stride: int
+            number of pixels skipped over to generate adjacent chips
+
+    Returns
+    ----------
+        outliers : NumPy Array
+            boolean, 2D array of outlier flags (1's) for functions to pass over
+    """
+    h, w, c = data.shape
+    outliers = np.zeros((h, w))
+
+    props = INFO[data_type]["properties"]
+    for prop in props:
+        temp_outliers = extract_outliers(data, data_type, prop, threshold, chip_size, stride)
+        show_outliers(data, data_type, prop, temp_outliers)
+
+        outliers = np.logical_or(outliers, temp_outliers)
+
+    print("Plot combined outlier mask")
+    show_outliers(data, data_type, props[0], outliers)
+
+    return outliers
+
+
 def extract_outliers(data, data_type, prop, threshold=2.5, chip_size=512, stride=512):
     """
-    Finds outliers from data
+    Finds outliers from given data property
 
     Parameters
     ----------
@@ -196,6 +234,10 @@ def extract_outliers(data, data_type, prop, threshold=2.5, chip_size=512, stride
         print(f"Property {prop} not found")
         return None
 
+    if stride > chip_size:
+        print(f"Stride ({stride} must be smaller than chip size ({chip_size})")
+        return None
+
     prop_data = data[:, :, prop_index]
     prop_chips = utils.generate_chips_from_data(prop_data, chip_size, stride)
     outlier_chips = {}
@@ -208,7 +250,7 @@ def extract_outliers(data, data_type, prop, threshold=2.5, chip_size=512, stride
     return outliers
 
 
-def apply_outlier_extraction(prop_data, threshold=2.5):
+def apply_outlier_extraction(prop_data, threshold=2.5, max_iterations=20):
     """
     Apply outlier extraction routine to single channel data array.
 
@@ -218,6 +260,8 @@ def apply_outlier_extraction(prop_data, threshold=2.5):
             SPM data (for a single property) supplied by the user
         threshold : float
             z-score threshold at which to flag a pixel as an outlier
+        max_iterations: int
+            maximum number of times z-score thresholding is applied
 
     Returns
     ----------
@@ -226,15 +270,24 @@ def apply_outlier_extraction(prop_data, threshold=2.5):
     """
     # Smooth data
     flt = np.array([[0.5, 0.5, 0.5], [0.5, 1, 0.5], [0.5, 0.5, 0.5]])
+    flt /= np.sum(flt)
     y = signal.convolve2d(prop_data, flt, boundary="symm", mode="same")
 
-    # Compute z-scores
-    u = np.mean(y)
-    s = np.std(y)
-    z = np.abs((u - y) / s)
+    outliers = np.zeros_like(y, dtype=np.uint8)
+    for i in range(max_iterations):
 
-    # Threshold by z-score
-    outliers = z > threshold
+        # Compute z-scores
+        u = np.mean(y)
+        s = np.std(y)
+        z = np.abs((u - y) / s)
+
+        # Threshold by z-score
+        temp_outliers = z > threshold
+        outliers += temp_outliers
+        y[outliers > 0] = np.median(y)
+
+        if np.sum(temp_outliers) == 0:
+            break
 
     return outliers
 
@@ -242,9 +295,9 @@ def apply_outlier_extraction(prop_data, threshold=2.5):
 def show_outliers(data, data_type, prop, outliers):
     """
     Plots data properties and outliers
-    
+
     Parameters
-    ----------    
+    ----------
         data : NumPy Array
             SPM data supplied by the user
         data_type : str
@@ -253,11 +306,14 @@ def show_outliers(data, data_type, prop, outliers):
             data property to be used for outlier extraction
         outliers : NumPy Array
             boolean, 2D array of outlier flags (1's) for functions to pass over
-        
+
     Returns
     ----------
-    
+
     """
+    if outliers is None:
+        return
+
     props = INFO[data_type]["properties"]
     if prop in props:
         prop_index = props.index(prop)
@@ -292,14 +348,14 @@ def show_outliers(data, data_type, prop, outliers):
 def smooth_outliers_from_data(data, outliers):
     """
     Replaces outliers from each channel of data with their mean.
-    
+
     Parameters
     ----------
         data : NumPy Array
             SPM data supplied by the user
         outliers : NumPy Array
             boolean, 2D array of outlier flags (1's) for functions to pass over
-            
+
     Returns
     ----------
         no_outliers_data : NumPy Array
@@ -314,17 +370,21 @@ def smooth_outliers_from_data(data, outliers):
     return no_outliers_data
 
 
-def remove_noisy_channels(data, data_properties):
+def remove_noisy_channels(data, data_properties, hist_num_buckets=100, hist_max_diff=10):
     """
     Removes noisy channels from data.
-    
+
     Parameters
     ----------
         data : NumPy Array
             SPM data supplied by the user
         data_properties : dict
             channel properties of the SPM data
-            
+        hist_num_buckets: int
+            number of buckets in histogram computation
+        hist_max_diff: int
+            maximum difference between the most significant histogram bucket and its neighbors
+
     Returns
     ----------
         data : NumPy Array
@@ -332,20 +392,19 @@ def remove_noisy_channels(data, data_properties):
         data_properties : dict
             channel properties of the SPM data
     """
-    buckets = 100  # TODO optimize
-
     remove_channels = []
     c = data.shape[2]
     for i in range(c):
         channel = data[:, :, i].flatten()
-        counts, bins = np.histogram(channel, buckets)
+        counts, bins = np.histogram(channel, hist_num_buckets)
         norm_counts = counts / sum(counts) * 100
-        max_id, max_count = max(zip(range(buckets), norm_counts), key=lambda k: k[1])
+        max_id, max_count = max(zip(range(hist_num_buckets), norm_counts), key=lambda k: k[1])
 
-        right_diff = max_count - norm_counts[min(max_id + 1, buckets - 1)]
+        # Remove channel if histogram is dominated by one bucket.
+        right_diff = max_count - norm_counts[min(max_id + 1, hist_num_buckets - 1)]
         left_diff = max_count - norm_counts[max(max_id - 1, 0)]
         max_diff = max(right_diff, left_diff)
-        if max_diff > 10:  # TODO optimize
+        if max_diff > hist_max_diff:
             print(f"Removing channel: {data_properties[i]}")
             remove_channels.append(i)
 
@@ -361,7 +420,7 @@ def remove_noisy_channels(data, data_properties):
 def apply_frequency_removal(data, data_type, compression_percent=95):
     """
     Removes small-magnitude frequencies from data
-    
+
     Parameters
     ----------
         data : NumPy Array
@@ -370,7 +429,7 @@ def apply_frequency_removal(data, data_type, compression_percent=95):
             data type corresponding to config.data_info keyword (QNM, AMFM, cAFM)
         compression_percent : float
             percentage of compression
-            
+
     Returns
     ----------
         new_data : NumPy Array
@@ -380,7 +439,7 @@ def apply_frequency_removal(data, data_type, compression_percent=95):
     def remove_small_magnitude_freqs(f_prop_shift, h, w, compression_percent):
         """
         Removes small-magnitude frequencies in Fourier space
-        
+
         Parameters
         ----------
             f_prop_shift : NumPy Array
@@ -391,7 +450,7 @@ def apply_frequency_removal(data, data_type, compression_percent=95):
                 width of data array
             compression_percent : float
                 percentage of compression
-            
+
         Returns
         ----------
             f_prop_shift : NumPy Array

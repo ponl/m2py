@@ -11,10 +11,8 @@ descriptive statistics are dynamically sorted into dictionaries of lists
 and arrays so that they may be iterably accessed and analyzed.
 """
 
-LABEL_THRESH = 10  # each label must have more than this number of pixels
-BG_THRESH = 100000 # NOTE 10k for smaller grains and 100k for bigger grains
-
 data_channels = config.data_info["QNM"]["properties"]
+
 
 def relabel(labels):
     """
@@ -65,8 +63,8 @@ def get_unique_labels(labels):
 
 
 def get_closest_value(labels, outliers, i, j):
-    """ For a specified  pixel (i, j), we get its closest (four neighbors) non-outlier value from labels
-    
+    """For a specified  pixel (i, j), we get its closest (four neighbors) non-outlier value from labels
+
     Parameters
     ----------
         labels : NumPy Array
@@ -77,7 +75,7 @@ def get_closest_value(labels, outliers, i, j):
             row value of pixel
         j : int
             col value of pixel
-            
+
     Returns
     ----------
         value : int
@@ -143,7 +141,7 @@ def get_closest_value(labels, outliers, i, j):
 def fill_out_zeros(labels, zeros):
     """
     For each zero value, we replace its value in labels by its closest non-zero value
-    
+
     Parameters
     ----------
         labels : NumPy Array
@@ -162,23 +160,25 @@ def fill_out_zeros(labels, zeros):
     x, y = np.nonzero(zeros)
     for i, j in zip(x, y):
         for k in range(c):
-            value = get_closest_value(labels[:,:,k], zeros, i, j)
+            value = get_closest_value(labels[:, :, k], zeros, i, j)
             labels[i, j, k] = value
 
     return np.squeeze(labels)
 
 
-def get_significant_labels(labels, bg_contrast_flag=False, label_thresh=LABEL_THRESH):
+def get_significant_labels(labels, label_thresh=10, bg_thresh=None):
     """
     Shows classification of pixels after segmentation
-    
+
     Parameters
     ----------
         labels : NumPy Array
             matrix of classification per pixel
-        bg_contrast_flag : bool
-            highlights biggest grain (background) in plot
-            
+        label_thresh : int
+            removes grains that are smaller than this value
+        bg_thresh : int
+            highlights grains (background grains) that are bigger than this value
+
     Returns
     ----------
         new_labels : NumPy Array
@@ -186,20 +186,24 @@ def get_significant_labels(labels, bg_contrast_flag=False, label_thresh=LABEL_TH
     """
     unique_labels = get_unique_labels(labels)
     grain_labels = [l for l in unique_labels if np.sum(labels == l) > label_thresh]
-    bg_labels = [l for l in grain_labels if np.sum(labels == l) > BG_THRESH]
     num_labels = len(grain_labels)
+
+    if bg_thresh:
+        bg_labels = [l for l in grain_labels if np.sum(labels == l) > bg_thresh]
+    else:
+        bg_labels = []
 
     h, w = labels.shape
     new_labels = np.zeros((h, w))
     for index, j in enumerate(grain_labels):  # plots mask per class
-        if (j in bg_labels) and bg_contrast_flag:
+        if j in bg_labels:
             color_step = num_labels  # uses a distinct color
         else:
             color_step = num_labels - index
 
         new_labels[labels == j] += color_step
 
-    if not bg_contrast_flag:
+    if not bg_thresh:
         new_labels = relabel(new_labels)
 
     return new_labels
@@ -207,7 +211,7 @@ def get_significant_labels(labels, bg_contrast_flag=False, label_thresh=LABEL_TH
 
 def array_stats(array):
     """
-    Takes in numpy array of data or labels and calculates median, standard 
+    Takes in numpy array of data or labels and calculates median, standard
     deviation, and variance
 
     Parameters
@@ -235,7 +239,7 @@ def phase_sort(array, labels, n_components):
     """
     Takes in a 3D numpy array and sorts pixels into a dictionary based on phase
     labels
-    
+
     Parameters
     ----------
         array : NumPy Array
@@ -244,12 +248,12 @@ def phase_sort(array, labels, n_components):
             array of phase labels
         n_components : int
             number of phases for sorting
-    
+
     Returns
     ----------
         phases : dict
-            Dictionary of numpy arrays, where each key is the phase number and 
-            each value is a flattened array of the pixels in that phase and 
+            Dictionary of numpy arrays, where each key is the phase number and
+            each value is a flattened array of the pixels in that phase and
             their properties
     """
     x, y, z = array.shape
@@ -354,15 +358,15 @@ def plot_single_phase_props(array):
     """
     Takes in a flattened array of SPM data and plots the histogram distributions
     of a single phase of the data
-    
+
     Parameters
     ----------
         array : NumPy Array
             Array of SPM data
-    
+
     Returns
     ----------
-        
+
     """
     xy, z = array.shape
     print("Shape: ", array.shape)
@@ -395,17 +399,17 @@ def plot_all_phases_props(phases):
     """
     Takes in a flattened array of SPM data and plots the histogram distributions
     of all phases of the data
-    
+
     Parameters
     ----------
         phases : dict
-            Dictionary of numpy arrays, where each key is the phase number and 
-            each value is a flattened array of the pixels in that phase and 
+            Dictionary of numpy arrays, where each key is the phase number and
+            each value is a flattened array of the pixels in that phase and
             their properties
-    
+
     Returns
     ----------
-        
+
     """
     for k, v in phases.items():
         print("Phase ", k)
@@ -416,20 +420,20 @@ def plot_all_phases_props(phases):
 
 def gen_phase_stats(phases):
     """
-    Takes in dictionary of phases from phase_sort() and generates a parallel 
+    Takes in dictionary of phases from phase_sort() and generates a parallel
     dictionary of stats
-    
+
     Parameters
     ----------
         phases : dict
-            Dictionary of numpy arrays, where each key is the phase number and 
+            Dictionary of numpy arrays, where each key is the phase number and
             each value a flattened array of the
             pixels in that phase and their properties
-        
+
     Returns
     ----------
         phase_stats : dict
-            Dictionary of numpy arrays, where each key is the phase number and 
+            Dictionary of numpy arrays, where each key is the phase number and
             each value is a flattened array of the basic statistical analysis of
             the phase properties
     """
@@ -448,10 +452,10 @@ def gen_phase_stats(phases):
 
 def grain_sort(array, grain_labels):
     """
-    Takes in an array and the associated domain (grain) labels. Sorts pixels 
-    into a dictionary, where each value is an array of the pixel values in 
+    Takes in an array and the associated domain (grain) labels. Sorts pixels
+    into a dictionary, where each value is an array of the pixel values in
     the domain
-    
+
     Parameters
     ----------
         array : NumPy Array
@@ -460,12 +464,12 @@ def grain_sort(array, grain_labels):
             Array of domain labels
         n_components : int
             number of phases for sorting
-    
+
     Returns
     ----------
         grain_props : dict
             Dictionary of numpy arrays, where each key is the phase number and
-            each value is a flattened array of the pixels in that grain and 
+            each value is a flattened array of the pixels in that grain and
             their properties
     """
     x, y, z = array.shape
@@ -501,19 +505,19 @@ def gen_grain_stats(grain_props):
     Takes in a dictionary of the different grains, produced by grain_sort(),
     and calculates basic histogram
     statistics on the constituent pixels
-    
+
     Parameters
     ----------
         grain_props : dict
             Dictionary of numpy arrays, where each key is the phase number and
-            each value is a flattened array of the pixels in that grain and 
+            each value is a flattened array of the pixels in that grain and
             their properties
-        
+
     Returns
     ----------
         grain_stats : dict
-            Dictionary of numpy arrays, where each key is the grain number and 
-            each value is a flattened array of the basic statistical analysis 
+            Dictionary of numpy arrays, where each key is the grain number and
+            each value is a flattened array of the basic statistical analysis
             of the grain properties
     """
     grain_stats = {}

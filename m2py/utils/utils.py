@@ -96,33 +96,6 @@ def reshape_image(image, image_height, image_width, num_channels, len_shape):
     return image
 
 
-def get_stride_from_chips(chips):
-    """
-    Stitch up chips into a full array
-
-    Parameters
-    ----------
-        chips : dict
-            dictionary of partition indices mapping to actual chips
-
-    Returns
-    ----------
-        stride: int
-            number of pixels skipped over to generate adjacent chips
-    """
-    keys = list(chips.keys())
-    sorted_keys = sorted(keys)
-
-    if len(sorted_keys) == 1:
-        return 0
-
-    first_key = sorted_keys[0]
-    second_key = sorted_keys[1]
-
-    stride = second_key[1] - first_key[1]
-    return stride
-
-
 def stitch_up_chips(chips):
     """
     Stitch up chips into a full array
@@ -137,8 +110,6 @@ def stitch_up_chips(chips):
         full_image: NumPy Array
             stitched up image made up of chips
     """
-    stride = get_stride_from_chips(chips)
-
     first_chip = chips[(0, 0)]
     chip_size = first_chip.shape[0]
     len_shape = len(first_chip.shape)
