@@ -1,7 +1,9 @@
 import numpy as np
+import pandas as pd
+from scipy import stats
 import matplotlib.pyplot as plt
 from matplotlib import pyplot, colors, cm
-from skimage import morphology
+from skimage import morphology, measure
 
 from m2py.utils import config
 from m2py.utils import pre_processing
@@ -139,57 +141,88 @@ def show_classification_distributions(labels, data, outliers, data_type, title_f
     pyplot.show()
 
 
-def show_grain_area_distribution(labels, data_type, data_subtype):
+def get_metrics_df(grain_labels, gmm_labels, metrics):
     """
-    Computes a histogram of the number of pixels per label
+    Returns a dataframe of metrics for the grains
 
     Parameters
     ----------
-        labels : NumPy Array
-            matrix of classification per pixel
-        data : NumPy Array
-            SPM data supplied by the user
-        data_type : str
-            data type corresponding to config.data_info keyword (QNM, AMFM, cAFM)
+        grain_labels : NumPy Array
+            matrix of grain extraction per pixel
+        gmm_labels : NumPy Array
+            matrix of phase classification per pixel
+        metrics : list
+            list of metrics to extract in df
 
     Returns
     ----------
 
     """
-    sample_area = INFO[data_type]["sample_size"][data_subtype] ** 2
+    # NOTE: this ignores 0 which is ideal since it denotes background
+    labels_metrics = measure.regionprops_table(grain_labels, properties=metrics)
 
-    unique_labels = slu.get_unique_labels(labels)
-    grain_areas = sorted([np.sum(labels == l) for l in unique_labels], reverse=True)
+    # Add phase information to df
+    mean_labels = []
+    ls = labels_metrics["label"]
+    for l in ls:
+        mean_label = stats.mode(gmm_labels[grain_labels == l])[0][0]
+        mean_labels.append(mean_label)
 
-    percent_grain_areas = grain_areas / np.sum(grain_areas) * 100
-    physical_grain_areas = percent_grain_areas / 100 * sample_area
+    mean_labels = np.array(mean_labels)
+    labels_metrics["phase"] = mean_labels
 
-    pyplot.figure(figsize=(18, 5), dpi=80, facecolor="w", edgecolor="k")
-    pyplot.subplot(1, 3, 1)
-    pyplot.plot(np.log10(grain_areas), "ro")
-    pyplot.plot(np.log10(grain_areas), "b")
-    pyplot.xlabel("Grain")
-    pyplot.ylabel("Log number of pixles per grain")
-    pyplot.title("Log Number of Pixels per Grain")
-    pyplot.grid()
+    labels_metrics_df = pd.DataFrame.from_dict(labels_metrics, orient="columns")
+    return labels_metrics_df
 
-    pyplot.subplot(1, 3, 2)
-    pyplot.plot(percent_grain_areas, "ro")
-    pyplot.plot(percent_grain_areas, "b")
-    pyplot.xlabel("Grain")
-    pyplot.ylabel("Grain percentage (%)")
-    pyplot.title("Grain Percentage (%)")
-    pyplot.grid()
 
-    pyplot.subplot(1, 3, 3)
-    pyplot.plot(physical_grain_areas, "ro")
-    pyplot.plot(physical_grain_areas, "b")
-    pyplot.xlabel("Grain")
-    pyplot.ylabel("Grain area (um2)")
-    pyplot.title("Grain Area (um2)")
-    pyplot.grid()
+def show_grain_metrics_distributions(df, in_meters=False, data_type=None):
+    """
+    Shows a histogram of each metric provided for the grains
 
-    pyplot.show()
+    Parameters
+    ----------
+        df : Pandas Dataframe
+            matrix of grain extraction per pixel
+        in_meters : str
+            specifies whether to use physical units or not
+        data_type : str
+            data type as specified by config file
+
+    Returns
+    ----------
+
+    """
+    for i, l in enumerate(df.phase.unique()):  # per phase
+        fig = pyplot.figure(figsize=(12, 8), dpi=80, facecolor="w", edgecolor="k")
+
+        counter = 1
+        for c in df.columns:
+            if c in ["label", "phase"]:
+                continue
+
+            pyplot.subplot(2, 3, counter)
+            filtered_df = df[df["phase"] == l]
+
+            if in_meters and data_type:  # in physical units
+                pixel_size = INFO[data_type]["pixel_size"]
+                sample_area = INFO[data_type]["sample_area"]
+                if c in ["perimeter", "minor_axis_length", "major_axis_length"]:
+                    data = filtered_df[c] * pixel_size
+                elif c in ["area"]:
+                    percentages = filtered_df[c] / filtered_df[c].sum()
+                    data = percentages * sample_area
+            else:  # in pixel units
+                data = filtered_df[c]
+
+            pyplot.hist(data, bins=10, density=True)
+
+            pyplot.xlabel(" ".join(c.split("_")).capitalize())
+            pyplot.grid()
+            counter += 1
+
+        pyplot.suptitle(f"Metrics for Phase: {l}", y=1, color="red")
+        pyplot.tight_layout()
+        pyplot.show()
 
 
 def show_distributions_together(labels, data, data_type, input_cmap):
