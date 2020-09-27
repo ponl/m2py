@@ -153,10 +153,14 @@ def fill_out_zeros(labels, zeros):
         labels : int
             closest non-outlier value.
     """
+    if zeros is None:
+        return labels
+
     if len(labels.shape) < 3:
         labels = np.expand_dims(labels, axis=2)
 
     c = labels.shape[2]
+
     x, y = np.nonzero(zeros)
     for i, j in zip(x, y):
         for k in range(c):
