@@ -1,33 +1,34 @@
 """
-This file contains channel and figure information specific to each SPM technique. The dictionary is structured as follows:
+This file contains channel and figure information specific to each SPM technique.
+The dictionary is structured as follows:
 
-data_info{
-    "SPM_technique":{
-        "properties (i.e. channels)": ["List", "of", "Channels"],
-        "sample_size (i.e. scan dimensions)": {
-            "sample_key_word": int,
-            "sample_key_word": int,
-            "sample_key_word": int,
+data_info = {
+    "NAME":
+        {
+            "properties (names of readings)": list,
+            "sample_area" (area of scan / sample): int,
+            "pixel_size (in micro meters)": int,
         },
-    },
-    ...
-}
+    }
 """
 
 data_info = {
     "QNM": {
         "properties": ["Adhesion", "Deformation", "Dissipation", "LogDMT", "Height", "Stiffness"],
-        "sample_size": {"Backgrounded": 2, "2ComponentFilms": 0.5, "Nanowires": 5},
+        "sample_area": 1,
+        "pixel_size": 1,
     },
-    "AMFM": {"properties": ["Height", "Deformation", "Youngs Modulus", "Phase"], "sample_size": {"Nanowires": 2}},
-    "cAFM": {"properties": ["Current", "Height"], "sample_size": {"Nanowires": 2}},
+    "AMFM": {"properties": ["Height", "Deformation", "Youngs Modulus", "Phase"], "sample_area": 1, "pixel_size": 1},
+    "cAFM": {"properties": ["Current", "Height"], "sample_area": 1, "pixel_size": 1},
     "Full_QNM": {
         "properties": ["Zscale", "Height", "PFE", "Stiffness", "LogDMT", "Adhesion", "Deformation", "Dissipation"],
-        "sample_size": {"P3HT:PCBM_OPV": 0.5, "P3HT_OFET": 0.5},
+        "sample_area": 1,
+        "pixel_size": 1,
     },
     "OPV_QNM": {
         "properties": ["Zscale", "PFE", "Stiffness", "LogDMT", "Adhesion", "Deformation", "Dissipation", "Height"],
-        "sample_size": {"P3HT:PCBM_OPV": 0.5, "P3HT_OFET": 0.5},
+        "sample_area": 1,
+        "pixel_size": 1,
     },
-    "Raman": {"properties": ["R", "G", "B"], "sample_size": {"Microplastics": 20}},
+    "Raman": {"properties": ["R", "G", "B"], "sample_area": 1, "pixel_size": 1},
 }

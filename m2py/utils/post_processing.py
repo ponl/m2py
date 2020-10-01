@@ -1,7 +1,10 @@
 import numpy as np
+import pandas as pd
+from scipy import stats
 import matplotlib.pyplot as plt
+from collections import defaultdict
 from matplotlib import pyplot, colors, cm
-from skimage import morphology
+from skimage import morphology, measure
 
 from m2py.utils import config
 from m2py.utils import pre_processing
@@ -78,7 +81,7 @@ def show_classification(labels, data, data_type, input_cmap="jet"):
     pyplot.show()
 
 
-def show_classification_distributions(labels, data, outliers, data_type, title_flag=True):
+def show_classification_distributions(labels, data, outliers, data_type, prop_name=True):
     """
     Shows distributions of classes after segmentation
 
@@ -92,8 +95,8 @@ def show_classification_distributions(labels, data, outliers, data_type, title_f
             array of outlier pixels
         data_type : str
             data type corresponding to config.data_info keyword (QNM, AMFM, cAFM)
-        title_flag : bool
-            flag for plots to show titles or not
+        prop_name : bool
+            whether to use property names or not
 
     Returns
     ----------
@@ -117,7 +120,7 @@ def show_classification_distributions(labels, data, outliers, data_type, title_f
     for index_i, i in enumerate(range(c)):
         ax_l = pyplot.subplot(num_rows, num_cols, cnt)
         cnt += 1
-        if title_flag:
+        if prop_name:
             ax_l.set_title(props[i])
         else:
             ax_l.set_title(f"PCA component {index_i + 1}")
@@ -139,57 +142,54 @@ def show_classification_distributions(labels, data, outliers, data_type, title_f
     pyplot.show()
 
 
-def show_grain_area_distribution(labels, data_type, data_subtype):
+def show_grain_metrics_distributions(df, in_meters=False, data_type=None):
     """
-    Computes a histogram of the number of pixels per label
+    Shows a histogram of each metric provided for the grains
 
     Parameters
     ----------
-        labels : NumPy Array
-            matrix of classification per pixel
-        data : NumPy Array
-            SPM data supplied by the user
+        df : Pandas Dataframe
+            matrix of grain extraction per pixel
+        in_meters : str
+            specifies whether to use physical units or not
         data_type : str
-            data type corresponding to config.data_info keyword (QNM, AMFM, cAFM)
+            data type as specified by config file
 
     Returns
     ----------
 
     """
-    sample_area = INFO[data_type]["sample_size"][data_subtype] ** 2
+    for i, l in enumerate(df.phase.unique()):  # per phase
+        fig = pyplot.figure(figsize=(12, 8), dpi=80, facecolor="w", edgecolor="k")
 
-    unique_labels = slu.get_unique_labels(labels)
-    grain_areas = sorted([np.sum(labels == l) for l in unique_labels], reverse=True)
+        counter = 1
+        for c in df.columns:
+            if c in ["label", "phase"]:
+                continue
 
-    percent_grain_areas = grain_areas / np.sum(grain_areas) * 100
-    physical_grain_areas = percent_grain_areas / 100 * sample_area
+            pyplot.subplot(2, 3, counter)
+            filtered_df = df[df["phase"] == l]
 
-    pyplot.figure(figsize=(18, 5), dpi=80, facecolor="w", edgecolor="k")
-    pyplot.subplot(1, 3, 1)
-    pyplot.plot(np.log10(grain_areas), "ro")
-    pyplot.plot(np.log10(grain_areas), "b")
-    pyplot.xlabel("Grain")
-    pyplot.ylabel("Log number of pixles per grain")
-    pyplot.title("Log Number of Pixels per Grain")
-    pyplot.grid()
+            if in_meters and data_type:  # in physical units
+                pixel_size = INFO[data_type]["pixel_size"]
+                sample_area = INFO[data_type]["sample_area"]
+                if c in ["perimeter", "minor_axis_length", "major_axis_length"]:
+                    data = filtered_df[c] * pixel_size
+                elif c in ["area"]:
+                    percentages = filtered_df[c] / filtered_df[c].sum()
+                    data = percentages * sample_area
+            else:  # in pixel units
+                data = filtered_df[c]
 
-    pyplot.subplot(1, 3, 2)
-    pyplot.plot(percent_grain_areas, "ro")
-    pyplot.plot(percent_grain_areas, "b")
-    pyplot.xlabel("Grain")
-    pyplot.ylabel("Grain percentage (%)")
-    pyplot.title("Grain Percentage (%)")
-    pyplot.grid()
+            pyplot.hist(data, bins=10, density=True)
 
-    pyplot.subplot(1, 3, 3)
-    pyplot.plot(physical_grain_areas, "ro")
-    pyplot.plot(physical_grain_areas, "b")
-    pyplot.xlabel("Grain")
-    pyplot.ylabel("Grain area (um2)")
-    pyplot.title("Grain Area (um2)")
-    pyplot.grid()
+            pyplot.xlabel(" ".join(c.split("_")).capitalize())
+            pyplot.grid()
+            counter += 1
 
-    pyplot.show()
+        pyplot.suptitle(f"Metrics for Phase: {l}", y=1, color="red")
+        pyplot.tight_layout()
+        pyplot.show()
 
 
 def show_distributions_together(labels, data, data_type, input_cmap):
@@ -290,7 +290,7 @@ def show_overlaid_distribution(probs, data, data_type, outliers=None):
     pyplot.show()
 
 
-def show_classification_correlation(labels, data, data_type, title_flag=True, sample_flag=True):
+def show_classification_correlation(labels, data, data_type, prop_name=True, sample_flag=True):
     """
     Plots the correlation of data properties after classification
 
@@ -298,10 +298,12 @@ def show_classification_correlation(labels, data, data_type, title_flag=True, sa
     ----------
         data : NumPy Array
             SPM data supplied by the user
+        labels : NumPy Array
+            segmentation labels for the data
         data_type : str
             data type corresponding to config.data_info keyword (QNM, AMFM, cAFM)
-        title_flag : bool
-            flag for plots to show titles or not
+        prop_name : bool
+            whether to use property names or not
         sample_flag : bool
             flag to sample points for visualization
 
@@ -329,7 +331,7 @@ def show_classification_correlation(labels, data, data_type, title_flag=True, sa
 
             ax = pyplot.subplot(num_rows, num_cols, cnt)
             ax.grid()
-            if title_flag:
+            if prop_name:
                 ax.set_xlabel(props[index_i])
                 ax.set_ylabel(props[index_j])
             else:
@@ -362,6 +364,121 @@ def show_classification_correlation(labels, data, data_type, title_flag=True, sa
     pyplot.show()
 
 
+## NOTE Auxiliary methods
+def get_metrics_df(grain_labels, gmm_labels, metrics):
+    """
+    Returns a dataframe of metrics for the grains
+
+    Parameters
+    ----------
+        grain_labels : NumPy Array
+            matrix of grain extraction per pixel
+        gmm_labels : NumPy Array
+            matrix of phase classification per pixel
+        metrics : list
+            list of metrics to extract in df
+
+    Returns
+    ----------
+        labels_metrics_df : Pandas dataframe
+            dataframe with information about each extracted grain
+
+    """
+    # NOTE: this ignores 0 which is ideal since it denotes background
+    labels_metrics = measure.regionprops_table(grain_labels, properties=metrics)
+
+    # Add phase information to df
+    mean_labels = []
+    ls = labels_metrics["label"]
+    for l in ls:
+        mean_label = stats.mode(gmm_labels[grain_labels == l])[0][0]
+        mean_labels.append(mean_label)
+
+    mean_labels = np.array(mean_labels)
+    labels_metrics["phase"] = mean_labels
+
+    labels_metrics_df = pd.DataFrame.from_dict(labels_metrics, orient="columns")
+    return labels_metrics_df
+
+
+def get_stastics_from_df(labels_metrics_df):
+    """
+    Returns a dataframe of statistics from grains dataframe
+
+    Parameters
+    ----------
+        labels_metrics_df : Pandas dataframe
+            dataframe with information about each extracted grain
+
+    Returns
+    ----------
+        labels_stats_df : Pandas dataframe
+            dataframe with statistics for extracted grain
+
+    """
+    labels_stats = defaultdict(list)
+    for c in labels_metrics_df.columns:
+        for l in labels_metrics_df.phase.unique():  # per phase
+            if c in ["label", "phase"]:
+                continue
+
+            data = labels_metrics_df[labels_metrics_df["phase"] == l][c]
+
+            labels_stats["label"].append(c)
+            labels_stats["phase"].append(l)
+            labels_stats["mean"].append(np.mean(data))
+            labels_stats["median"].append(np.median(data))
+            labels_stats["std"].append(np.std(data))
+            labels_stats["variance"].append(np.var(data))
+
+    labels_stats_df = pd.DataFrame.from_dict(labels_stats, orient="columns")
+    return labels_stats_df
+
+
+def get_stastics_from_np(data, labels, data_type, prop_name=True):
+    """
+    Returns a dataframe of statistics from phases array
+
+    Parameters
+    ----------
+        data : NumPy Array
+            data supplied by the user
+        labels : NumPy Array
+            segmentation labels for the data
+        data_type : str
+            data type corresponding to config.data_info keyword (QNM, AMFM, cAFM)
+        prop_name : bool
+            whether to use property names or not
+
+    Returns
+    ----------
+        stats_df : Pandas dataframe
+            dataframe with statistics for each phase
+
+    """
+    props = INFO[data_type]["properties"]
+    h, w, c = data.shape
+
+    stats = defaultdict(list)
+    for i in range(c):
+        for l in np.unique(labels):  # per phase
+            d = data[:, :, i][labels == l]
+
+            if prop_name:
+                stats["label"].append(props[i])
+            else:
+                stats["label"].append(f"PCA Component {i + 1}")
+
+            stats["phase"].append(l)
+            stats["mean"].append(np.mean(d))
+            stats["median"].append(np.median(d))
+            stats["std"].append(np.std(d))
+            stats["variance"].append(np.var(d))
+
+    stats_df = pd.DataFrame.from_dict(stats, orient="columns")
+    return stats_df
+
+
 def get_gmm_background_label(gmm_labels, connected_labels):
     """
     Gets the GMM backgound comoponent using connected components information. The background component will
@@ -384,6 +501,7 @@ def get_gmm_background_label(gmm_labels, connected_labels):
     return min(list(np.unique(gmm_labels)), key=lambda k: np.size(np.unique(connected_labels[gmm_labels == k])))
 
 
+## NOTE Post-processing methods
 def applies_morphological_cleanup(labels, bg_label, morph_radius=5, morph_min_size=25):
     """
     Applies morphological cleanup to labeling assignment per component / grain.
