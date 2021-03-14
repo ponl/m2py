@@ -165,7 +165,7 @@ def show_correlations(num_props, data_type, path):
 ## Outlier detection and filtering methods
 
 
-def extract_outliers_from_all_properties(data, data_type, threshold=2.5, chip_size=512, stride=512):
+def extract_outliers_from_all_properties(data, data_type, threshold=2.5, chip_size=None, stride=None, max_iterations=20):
     """
     Finds outliers from all data properties
 
@@ -192,18 +192,17 @@ def extract_outliers_from_all_properties(data, data_type, threshold=2.5, chip_si
 
     props = INFO[data_type]["properties"]
     for prop in props:
-        temp_outliers = extract_outliers(data, data_type, prop, threshold, chip_size, stride)
-        show_outliers(data, data_type, prop, temp_outliers)
+        temp_outliers = extract_outliers(data, data_type, prop, threshold, chip_size, stride, max_iterations)
+        show_outliers(data, data_type, prop, temp_outliers, to_plot=False)
 
         outliers = np.logical_or(outliers, temp_outliers)
 
-    print("Plot combined outlier mask")
-    show_outliers(data, data_type, props[0], outliers)
+    show_outliers(data, data_type, props[0], outliers, to_plot=False)
 
     return outliers
 
 
-def extract_outliers(data, data_type, prop, threshold=2.5, chip_size=512, stride=512):
+def extract_outliers(data, data_type, prop, threshold=2.5, chip_size=None, stride=None, max_iterations=20):
     """
     Finds outliers from given data property
 
@@ -234,17 +233,32 @@ def extract_outliers(data, data_type, prop, threshold=2.5, chip_size=512, stride
         print(f"Property {prop} not found")
         return None
 
+    prop_data = data[:, :, prop_index]
+
+    if chip_size == None and stride == None:
+        outliers = np.ones_like(prop_data)
+        while np.sum(outliers) / prop_data.size * 100 > 20:
+            threshold += 0.1
+            outliers = apply_outlier_extraction(prop_data, threshold, max_iterations=max_iterations)
+
+        return outliers
+
     if stride > chip_size:
         print(f"Stride ({stride} must be smaller than chip size ({chip_size})")
         return None
 
-    prop_data = data[:, :, prop_index]
     prop_chips = utils.generate_chips_from_data(prop_data, chip_size, stride)
     outlier_chips = {}
 
+    original_threshold = threshold
     for key, chip in prop_chips.items():
-        temp_outliers = apply_outlier_extraction(chip, threshold)
+        temp_outliers = np.ones_like(chip)
+        while np.sum(temp_outliers) / chip.size * 100 > 20:
+            threshold += 0.1
+            temp_outliers = apply_outlier_extraction(chip, threshold, max_iterations=max_iterations)
+
         outlier_chips[key] = temp_outliers
+        threshold = original_threshold
 
     outliers = utils.stitch_up_chips(outlier_chips)
     return outliers
@@ -277,9 +291,9 @@ def apply_outlier_extraction(prop_data, threshold=2.5, max_iterations=20):
     for i in range(max_iterations):
 
         # Compute z-scores
-        u = np.mean(y)
+        u = np.median(y)
         s = np.std(y)
-        z = np.abs((u - y) / s)
+        z = np.abs((u - y) / (s + 1e-10))
 
         # Threshold by z-score
         temp_outliers = z > threshold
@@ -292,7 +306,7 @@ def apply_outlier_extraction(prop_data, threshold=2.5, max_iterations=20):
     return outliers
 
 
-def show_outliers(data, data_type, prop, outliers):
+def show_outliers(data, data_type, prop, outliers, to_plot=False):
     """
     Plots data properties and outliers
 
@@ -342,7 +356,11 @@ def show_outliers(data, data_type, prop, outliers):
     pyplot.colorbar(m, fraction=0.046, pad=0.04)
 
     pyplot.tight_layout()
-    pyplot.show()
+
+    if to_plot:
+        pyplot.show()
+    else:
+        pyplot.close()
 
 
 def smooth_outliers_from_data(data, outliers):
