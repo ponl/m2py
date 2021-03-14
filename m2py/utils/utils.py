@@ -61,8 +61,6 @@ def generate_chips_from_data(data, chip_size, stride):
     key = (h_limit, w_limit)
     chips[key] = reshape_image(chip, chip_size, chip_size, c, len_shape)
 
-    print(f"There were {len(chips)} chips generated.")
-
     return chips
 
 
