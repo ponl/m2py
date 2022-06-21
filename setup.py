@@ -13,7 +13,7 @@ setuptools.setup(
     long_description_content_type="text/markdown",
     url="https://github.com/ponl/m2py",
     packages=["m2py"],
-    install_requires=["matplotlib==2.2.3", "numpy==1.15.1", "scipy==1.1.0", "sklearn==0.0", "scikit-image==0.16.2"],
+    install_requires=["matplotlib==2.2.3", "numpy==1.22.0", "scipy==1.1.0", "sklearn==0.0", "scikit-image==0.16.2"],
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: Apache Software License",
